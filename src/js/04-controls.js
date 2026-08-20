@@ -95,10 +95,17 @@ const gMotion = section("Motion");
 toggle(gMotion,"animate","Animate", ()=> setAnimating(P.animate));
 slider(gMotion,"flow","Flow",0,1,0.01, pct, refreshThumbs);
 slider(gMotion,"looplen","Loop length",1,12,0.5, v=>v.toFixed(1)+" s");
+const fpsField = el("div","field",gMotion);
+el("span",null,fpsField).textContent = "Frame rate";
+const fpsSel = el("select","sel",fpsField);
+[24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
+fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
+binders.push(()=>{ fpsSel.value = P.fps; });
+
 const recBtn = el("button","btn wide",gMotion);
 recBtn.type="button"; recBtn.textContent="Record loop";
 const recNote = el("p","hint",gMotion);
-recNote.textContent = "The loop is seamless: the field travels a closed path and returns to frame one.";
+recNote.textContent = "Frames are rendered one at a time and stamped with exact times, so a heavy plate takes longer to record but never drops a frame. The loop is seamless: the field travels a closed path back to frame one.";
 
 const gTone = section("Tone");
 slider(gTone,"exposure","Exposure",-2,2,0.01, v=>(v>0?"+":"")+v.toFixed(2)+" EV", refreshThumbs);

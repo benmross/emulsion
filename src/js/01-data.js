@@ -6,7 +6,7 @@ const DEFAULTS = {
   c0:"#000000", c1:"#6E7076", c2:"#F2F2F0", mid:.5, invert:false,
   grain:.16, gsize:1.3, gdens:.9, gresp:.75, chroma:false,
   tex:0, texamt:.35, texscale:1,
-  animate:false, flow:.35, looplen:4, fill:false,
+  animate:false, flow:.35, looplen:4, fps:30, fill:false,
   W:1206, H:2622, seed:.37, fmt:"png", guides:false, setsize:6
 };
 const P = Object.assign({}, DEFAULTS);

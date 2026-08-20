@@ -446,7 +446,7 @@ const DEFAULTS = {
   c0:"#000000", c1:"#6E7076", c2:"#F2F2F0", mid:.5, invert:false,
   grain:.16, gsize:1.3, gdens:.9, gresp:.75, chroma:false,
   tex:0, texamt:.35, texscale:1,
-  animate:false, flow:.35, looplen:4, fill:false,
+  animate:false, flow:.35, looplen:4, fps:30, fill:false,
   W:1206, H:2622, seed:.37, fmt:"png", guides:false, setsize:6
 };
 const P = Object.assign({}, DEFAULTS);
@@ -988,10 +988,17 @@ const gMotion = section("Motion");
 toggle(gMotion,"animate","Animate", ()=> setAnimating(P.animate));
 slider(gMotion,"flow","Flow",0,1,0.01, pct, refreshThumbs);
 slider(gMotion,"looplen","Loop length",1,12,0.5, v=>v.toFixed(1)+" s");
+const fpsField = el("div","field",gMotion);
+el("span",null,fpsField).textContent = "Frame rate";
+const fpsSel = el("select","sel",fpsField);
+[24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
+fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
+binders.push(()=>{ fpsSel.value = P.fps; });
+
 const recBtn = el("button","btn wide",gMotion);
 recBtn.type="button"; recBtn.textContent="Record loop";
 const recNote = el("p","hint",gMotion);
-recNote.textContent = "The loop is seamless: the field travels a closed path and returns to frame one.";
+recNote.textContent = "Frames are rendered one at a time and stamped with exact times, so a heavy plate takes longer to record but never drops a frame. The loop is seamless: the field travels a closed path back to frame one.";
 
 const gTone = section("Tone");
 slider(gTone,"exposure","Exposure",-2,2,0.01, v=>(v>0?"+":"")+v.toFixed(2)+" EV", refreshThumbs);
@@ -1137,8 +1144,177 @@ function setTab(i){
 }
 setTab(0);
 
+/* ============================== offline video ==============================
+   MediaRecorder timestamps frames by wall clock: a plate that renders at 14 fps
+   becomes a 14 fps video, however long the loop is meant to be. Here every frame
+   is rendered at its exact loop phase, handed to a VideoEncoder with an exact
+   timestamp, and muxed into an MP4 by hand — so render speed affects how long
+   the export takes and nothing else.
+
+   MP4 rather than WebM because this file's destination is an iPhone, which
+   plays neither WebM nor VP9.
+*/
+
+const AVC_CODECS = [
+  "avc1.640034", "avc1.4D4034", "avc1.640033",
+  "avc1.4D4033", "avc1.42E034", "avc1.640028"
+];
+
+function canEncodeVideo(){
+  return typeof VideoEncoder !== "undefined" && typeof VideoFrame !== "undefined";
+}
+
+async function pickAvcConfig(width, height, bitrate, fps){
+  if(!canEncodeVideo()) return null;
+  for(const codec of AVC_CODECS){
+    const cfg = {codec, width, height, bitrate, framerate: fps, avc:{format:"avc"}};
+    try {
+      const probe = await VideoEncoder.isConfigSupported(cfg);
+      if(probe && probe.supported) return cfg;
+    } catch(e){ /* try the next profile */ }
+  }
+  return null;
+}
+
+/* ---------- the smallest MP4 that holds one H.264 track ---------- */
+const b32 = n => [(n>>>24)&255, (n>>>16)&255, (n>>>8)&255, n&255];
+const b16 = n => [(n>>>8)&255, n&255];
+const ascii = s => Array.from(s, c => c.charCodeAt(0));
+
+function box(type, ...parts){
+  const body = [].concat(...parts);
+  return [...b32(body.length + 8), ...ascii(type), ...body];
+}
+function fullBox(type, version, flags, ...parts){
+  return box(type, [version, (flags>>16)&255, (flags>>8)&255, flags&255], ...parts);
+}
+
+const MATRIX = [0x00010000,0,0, 0,0x00010000,0, 0,0,0x40000000].flatMap(b32);
+
+function buildMoov({samples, description, width, height, fps, dataOffset}){
+  const n = samples.length;
+  const timescale = fps * 1000;          // exact for any integer fps
+  const delta = 1000;
+  const durationTicks = n * delta;
+  const movieTimescale = 1000;
+  const movieDuration = Math.round(n * 1000 / fps);
+  const syncs = [];
+  samples.forEach((s,i)=>{ if(s.key) syncs.push(i+1); });
+
+  const avcC = box("avcC", Array.from(description));
+  const avc1 = box("avc1",
+    [0,0,0,0,0,0], b16(1),                       // reserved, data reference index
+    b32(0),                                      // pre_defined(16) + reserved(16)
+    b32(0), b32(0), b32(0),                      // pre_defined[3]
+    b16(width), b16(height),
+    b32(0x00480000), b32(0x00480000),            // 72 dpi
+    b32(0), b16(1),                              // reserved, frame count
+    new Array(32).fill(0),                       // compressor name
+    b16(0x0018), b16(0xFFFF),                    // depth, pre_defined
+    avcC
+  );
+
+  const stbl = box("stbl",
+    fullBox("stsd", 0, 0, b32(1), avc1),
+    fullBox("stts", 0, 0, b32(1), b32(n), b32(delta)),
+    fullBox("stss", 0, 0, b32(syncs.length), syncs.flatMap(b32)),
+    fullBox("stsc", 0, 0, b32(1), b32(1), b32(n), b32(1)),
+    fullBox("stsz", 0, 0, b32(0), b32(n), samples.flatMap(s => b32(s.data.byteLength))),
+    fullBox("stco", 0, 0, b32(1), b32(dataOffset))
+  );
+
+  return box("moov",
+    fullBox("mvhd", 0, 0,
+      b32(0), b32(0), b32(movieTimescale), b32(movieDuration),
+      b32(0x00010000), b16(0x0100), b16(0), b32(0), b32(0),
+      MATRIX, new Array(24).fill(0), b32(2)
+    ),
+    box("trak",
+      fullBox("tkhd", 0, 3,
+        b32(0), b32(0), b32(1), b32(0), b32(movieDuration),
+        b32(0), b32(0), b16(0), b16(0), b16(0), b16(0),
+        MATRIX, b32(width << 16), b32(height << 16)
+      ),
+      box("mdia",
+        fullBox("mdhd", 0, 0, b32(0), b32(0), b32(timescale), b32(durationTicks), b16(0x55C4), b16(0)),
+        fullBox("hdlr", 0, 0, b32(0), ascii("vide"), b32(0), b32(0), b32(0), ascii("EmulsionVideo\0")),
+        box("minf",
+          fullBox("vmhd", 0, 1, b16(0), b16(0), b16(0), b16(0)),
+          box("dinf", fullBox("dref", 0, 0, b32(1), fullBox("url ", 0, 1))),
+          stbl
+        )
+      )
+    )
+  );
+}
+
+function muxMP4({samples, description, width, height, fps}){
+  const ftyp = box("ftyp", ascii("isom"), b32(512), ascii("isomiso2avc1mp41"));
+  const mdatSize = samples.reduce((n,s)=> n + s.data.byteLength, 0) + 8;
+  const dataOffset = ftyp.length + 8;
+  const moov = buildMoov({samples, description, width, height, fps, dataOffset});
+
+  const out = new Uint8Array(ftyp.length + mdatSize + moov.length);
+  let at = 0;
+  out.set(ftyp, at); at += ftyp.length;
+  out.set([...b32(mdatSize), ...ascii("mdat")], at); at += 8;
+  for(const s of samples){ out.set(s.data, at); at += s.data.byteLength; }
+  out.set(moov, at);
+  return new Blob([out], {type: "video/mp4"});
+}
+
+/* ---------- render every frame, encode, mux ---------- */
+async function encodeLoopMP4(p, {fps, seconds, onProgress}){
+  const width  = p.W - (p.W % 2);       // H.264 is 4:2:0 — both axes must be even
+  const height = p.H - (p.H % 2);
+  const total  = Math.max(2, Math.round(fps * seconds));
+  // grain is expensive to compress, so budget generously by pixel count,
+  // then clamp so the file still fits a 16 MB save
+  const byPixels = Math.round(width * height * fps * 0.22);
+  const byBudget = Math.round(9 * 8e6 / seconds);
+  const bitrate = Math.max(2e6, Math.min(24e6, byPixels, byBudget));
+  const config = await pickAvcConfig(width, height, bitrate, fps);
+  if(!config) return null;
+
+  const samples = [];
+  let description = null, failed = null;
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => {
+      if(meta && meta.decoderConfig && meta.decoderConfig.description){
+        description = new Uint8Array(meta.decoderConfig.description);
+      }
+      const data = new Uint8Array(chunk.byteLength);
+      chunk.copyTo(data);
+      samples.push({data, key: chunk.type === "key"});
+    },
+    error: e => { failed = e; }
+  });
+  encoder.configure(config);
+
+  const frameDur = Math.round(1e6 / fps);
+  const gop = Math.max(1, Math.round(fps * 2));
+  for(let i = 0; i < total && !failed; i++){
+    draw(p, width, height, 1, (i / total) * Math.PI * 2);
+    const frame = new VideoFrame(canvas, {timestamp: Math.round(i * 1e6 / fps), duration: frameDur});
+    encoder.encode(frame, {keyFrame: i % gop === 0});
+    frame.close();
+    if(onProgress) onProgress(i + 1, total);
+    // yield so the overlay repaints, and let the encoder drain if it falls behind
+    await new Promise(r => setTimeout(r, 0));
+    while(encoder.encodeQueueSize > 6 && !failed){
+      await new Promise(r => setTimeout(r, 8));
+    }
+  }
+  if(failed){ try { encoder.close(); } catch(e){} throw failed; }
+
+  await encoder.flush();
+  encoder.close();
+  if(!description || !samples.length) return null;
+  return muxMP4({samples, description, width, height, fps});
+}
+
 /* ============================== recipes, shuffle, export ============================== */
-const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize","fill"];
+const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize","fill","fps","looplen"];
 const FORM_BASE = {};
 for(const k in DEFAULTS) if(KEEP.indexOf(k)<0) FORM_BASE[k] = DEFAULTS[k];
 
@@ -1363,50 +1539,98 @@ function pickVideo(){
   return null;
 }
 const VIDEO = pickVideo();
-if(!VIDEO){
+if(!VIDEO && !canEncodeVideo()){
   recBtn.disabled = true;
-  recBtn.title = "This browser can't record canvas video";
-  recNote.textContent = "Recording needs a browser with MediaRecorder — Chrome, Edge, or Safari 17+.";
+  recBtn.title = "This browser can't encode video";
+  recNote.textContent = "Recording needs WebCodecs or MediaRecorder — Chrome, Edge, or a current Firefox or Safari.";
 }
+
+/* How fast can this machine actually paint a frame at full size? Only the
+   realtime fallback cares — the WebCodecs path is immune to it. */
+function measureFps(w, h, frames){
+  return new Promise(res=>{
+    let i = 0; const t0 = performance.now();
+    (function step(){
+      draw(P, w, h, 1, (i/frames)*Math.PI*2);
+      if(++i >= frames){ res(frames / ((performance.now() - t0)/1000)); return; }
+      requestAnimationFrame(step);
+    })();
+  });
+}
+
+/* Fallback: capture the canvas in real time. Frame timing comes from the wall
+   clock here, so the render has to keep up — shrink it until it can. */
+async function recordRealtime(dur){
+  const measured = await measureFps(P.W, P.H, 6);
+  let scale = Math.min(1, Math.sqrt(Math.max(measured,1) / 26));
+  scale = Math.max(0.4, Math.round(scale*20)/20);
+  const w = Math.max(2, Math.round(P.W*scale/2)*2);
+  const h = Math.max(2, Math.round(P.H*scale/2)*2);
+
+  draw(P, w, h, 1, 0);
+  const stream = canvas.captureStream();
+  const chunks = [];
+  const rec = new MediaRecorder(stream, {
+    mimeType: VIDEO.mime,
+    videoBitsPerSecond: Math.max(2e6, Math.min(24e6, Math.round(w*h*26*0.22), Math.round(9*8e6/dur)))
+  });
+  rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+  const stopped = new Promise(r => { rec.onstop = r; });
+  rec.start();
+  const t0 = performance.now();
+  await new Promise(done=>{
+    (function step(){
+      const el = performance.now() - t0;
+      draw(P, w, h, 1, (el/(dur*1000))*Math.PI*2);
+      busy.textContent = "recording " + (el/1000).toFixed(1) + " / " + dur.toFixed(1) + " s";
+      if(el >= dur*1000){ done(); return; }
+      requestAnimationFrame(step);
+    })();
+  });
+  rec.stop();
+  await stopped;
+  stream.getTracks().forEach(t => t.stop());
+  return {
+    blob: new Blob(chunks, {type: VIDEO.mime}),
+    ext: VIDEO.ext,
+    note: scale < 1 ? " · captured at " + Math.round(scale*100) + "% size to hold frame rate" : ""
+  };
+}
+
 recBtn.addEventListener("click", async ()=>{
-  if(!draw || !VIDEO || exporting) return;
+  if(!draw || exporting) return;
   const dur = Math.max(P.looplen, 1);
   exporting = true; recording = true;
-  busy.textContent = "recording loop…";
+  busy.textContent = "preparing…";
   busy.classList.add("on");
-  let chunks = [], rec = null;
   try{
-    draw(P, P.W, P.H, 1, 0);
-    const stream = canvas.captureStream();
-    rec = new MediaRecorder(stream, {
-      mimeType: VIDEO.mime,
-      videoBitsPerSecond: Math.min(24e6, Math.round(10*8e6/dur))
-    });
-    rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
-    const stopped = new Promise(r => { rec.onstop = r; });
-    rec.start();
-    const t0 = performance.now();
-    await new Promise(res=>{
-      function step(now){
-        const el = now - t0;
-        draw(P, P.W, P.H, 1, (el/(dur*1000))*Math.PI*2);
-        if(el >= dur*1000){ res(); return; }
-        requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    });
-    rec.stop();
-    await stopped;
-    stream.getTracks().forEach(t=>t.stop());
-    const blob = new Blob(chunks, {type: VIDEO.mime});
-    if(!blob.size){ msg("recording came back empty"); }
-    else if(blob.size > LIMIT){ msg("loop is "+(blob.size/1048576).toFixed(1)+" MB — shorten it or drop the resolution"); }
-    else await saveBlob(blob, "emulsion_loop_"+P.W+"x"+P.H+"_"+Math.round(P.seed*10000)+"."+VIDEO.ext);
+    let blob = null, ext = "mp4", note = "";
+    if(canEncodeVideo()){
+      try {
+        blob = await encodeLoopMP4(P, {
+          fps: P.fps, seconds: dur,
+          onProgress: (i,n)=>{ busy.textContent = "frame " + i + " / " + n; }
+        });
+      } catch(err){ console.warn("WebCodecs encode failed, falling back", err); blob = null; }
+    }
+    if(!blob && VIDEO){
+      const r = await recordRealtime(dur);
+      blob = r.blob; ext = r.ext; note = r.note;
+    }
+    if(!blob){ msg("this browser could not encode the loop"); }
+    else if(blob.size > LIMIT){
+      msg("loop is " + (blob.size/1048576).toFixed(1) + " MB — shorten it or drop the resolution");
+    } else {
+      const name = "emulsion_loop_"+P.W+"x"+P.H+"_"+Math.round(P.seed*10000)+"."+ext;
+      const status = await saveBlob(blob, name);
+      if(status === "saved" && note) msg("saved · " + name + note);
+    }
   } catch(err){
     console.error(err);
-    msg("recording failed · "+(err && err.message ? err.message : "unknown error"));
+    msg("recording failed · " + (err && err.message ? err.message : "unknown error"));
   } finally {
     busy.classList.remove("on");
+    busy.textContent = "rendering full size…";
     exporting = false; recording = false;
     if(P.animate) animT0 = performance.now();
     render();

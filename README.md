@@ -43,8 +43,12 @@ Fourteen presets, each setting the full form/tone/grain stack:
 - **Export** — one still as PNG, WebP, or JPEG at the configured resolution
   (up to 8192 px a side). PNG over 16 MB falls back to WebP automatically.
 - **Export set** — 4–12 seed variations of the current look, back to back.
-- **Record loop** — one full animation cycle captured off the canvas as MP4
-  (H.264) where the browser supports it, WebM otherwise.
+- **Record loop** — one full animation cycle as MP4 (H.264). Frames are
+  rendered one at a time, encoded through WebCodecs with exact timestamps, and
+  muxed by `src/js/05-video.js`, so a plate that renders at 14 fps still yields
+  a true 24/30/60 fps video — it just takes longer to write. Browsers without
+  WebCodecs H.264 fall back to real-time `MediaRecorder` capture, which shrinks
+  the frame to whatever size the machine can paint fast enough.
 
 Presets cover iPhone 16 Pro (1206 × 2622) and Pro Max, common phone and desktop
 sizes, and a 4:5 print ratio; any custom size works too.

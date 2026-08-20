@@ -19,7 +19,8 @@ const MODULES = [
   "02-renderer.js",  // WebGL2 program + uniform upload
   "03-stage.js",     // canvas sizing, paint loop, animation clock, status bar
   "04-controls.js",  // control factory and the rail
-  "05-actions.js",   // recipes, shuffle, export, batch, loop recording
+  "05-video.js",     // WebCodecs encoder + MP4 muxer for loop export
+  "06-actions.js",   // recipes, shuffle, export, batch, loop recording
 ];
 
 const [template, styles, vert, frag] = await Promise.all([

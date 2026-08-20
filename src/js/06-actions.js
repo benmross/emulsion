@@ -1,5 +1,5 @@
 /* ============================== recipes, shuffle, export ============================== */
-const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize","fill"];
+const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize","fill","fps","looplen"];
 const FORM_BASE = {};
 for(const k in DEFAULTS) if(KEEP.indexOf(k)<0) FORM_BASE[k] = DEFAULTS[k];
 
@@ -224,50 +224,98 @@ function pickVideo(){
   return null;
 }
 const VIDEO = pickVideo();
-if(!VIDEO){
+if(!VIDEO && !canEncodeVideo()){
   recBtn.disabled = true;
-  recBtn.title = "This browser can't record canvas video";
-  recNote.textContent = "Recording needs a browser with MediaRecorder — Chrome, Edge, or Safari 17+.";
+  recBtn.title = "This browser can't encode video";
+  recNote.textContent = "Recording needs WebCodecs or MediaRecorder — Chrome, Edge, or a current Firefox or Safari.";
 }
+
+/* How fast can this machine actually paint a frame at full size? Only the
+   realtime fallback cares — the WebCodecs path is immune to it. */
+function measureFps(w, h, frames){
+  return new Promise(res=>{
+    let i = 0; const t0 = performance.now();
+    (function step(){
+      draw(P, w, h, 1, (i/frames)*Math.PI*2);
+      if(++i >= frames){ res(frames / ((performance.now() - t0)/1000)); return; }
+      requestAnimationFrame(step);
+    })();
+  });
+}
+
+/* Fallback: capture the canvas in real time. Frame timing comes from the wall
+   clock here, so the render has to keep up — shrink it until it can. */
+async function recordRealtime(dur){
+  const measured = await measureFps(P.W, P.H, 6);
+  let scale = Math.min(1, Math.sqrt(Math.max(measured,1) / 26));
+  scale = Math.max(0.4, Math.round(scale*20)/20);
+  const w = Math.max(2, Math.round(P.W*scale/2)*2);
+  const h = Math.max(2, Math.round(P.H*scale/2)*2);
+
+  draw(P, w, h, 1, 0);
+  const stream = canvas.captureStream();
+  const chunks = [];
+  const rec = new MediaRecorder(stream, {
+    mimeType: VIDEO.mime,
+    videoBitsPerSecond: Math.max(2e6, Math.min(24e6, Math.round(w*h*26*0.22), Math.round(9*8e6/dur)))
+  });
+  rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+  const stopped = new Promise(r => { rec.onstop = r; });
+  rec.start();
+  const t0 = performance.now();
+  await new Promise(done=>{
+    (function step(){
+      const el = performance.now() - t0;
+      draw(P, w, h, 1, (el/(dur*1000))*Math.PI*2);
+      busy.textContent = "recording " + (el/1000).toFixed(1) + " / " + dur.toFixed(1) + " s";
+      if(el >= dur*1000){ done(); return; }
+      requestAnimationFrame(step);
+    })();
+  });
+  rec.stop();
+  await stopped;
+  stream.getTracks().forEach(t => t.stop());
+  return {
+    blob: new Blob(chunks, {type: VIDEO.mime}),
+    ext: VIDEO.ext,
+    note: scale < 1 ? " · captured at " + Math.round(scale*100) + "% size to hold frame rate" : ""
+  };
+}
+
 recBtn.addEventListener("click", async ()=>{
-  if(!draw || !VIDEO || exporting) return;
+  if(!draw || exporting) return;
   const dur = Math.max(P.looplen, 1);
   exporting = true; recording = true;
-  busy.textContent = "recording loop…";
+  busy.textContent = "preparing…";
   busy.classList.add("on");
-  let chunks = [], rec = null;
   try{
-    draw(P, P.W, P.H, 1, 0);
-    const stream = canvas.captureStream();
-    rec = new MediaRecorder(stream, {
-      mimeType: VIDEO.mime,
-      videoBitsPerSecond: Math.min(24e6, Math.round(10*8e6/dur))
-    });
-    rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
-    const stopped = new Promise(r => { rec.onstop = r; });
-    rec.start();
-    const t0 = performance.now();
-    await new Promise(res=>{
-      function step(now){
-        const el = now - t0;
-        draw(P, P.W, P.H, 1, (el/(dur*1000))*Math.PI*2);
-        if(el >= dur*1000){ res(); return; }
-        requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    });
-    rec.stop();
-    await stopped;
-    stream.getTracks().forEach(t=>t.stop());
-    const blob = new Blob(chunks, {type: VIDEO.mime});
-    if(!blob.size){ msg("recording came back empty"); }
-    else if(blob.size > LIMIT){ msg("loop is "+(blob.size/1048576).toFixed(1)+" MB — shorten it or drop the resolution"); }
-    else await saveBlob(blob, "emulsion_loop_"+P.W+"x"+P.H+"_"+Math.round(P.seed*10000)+"."+VIDEO.ext);
+    let blob = null, ext = "mp4", note = "";
+    if(canEncodeVideo()){
+      try {
+        blob = await encodeLoopMP4(P, {
+          fps: P.fps, seconds: dur,
+          onProgress: (i,n)=>{ busy.textContent = "frame " + i + " / " + n; }
+        });
+      } catch(err){ console.warn("WebCodecs encode failed, falling back", err); blob = null; }
+    }
+    if(!blob && VIDEO){
+      const r = await recordRealtime(dur);
+      blob = r.blob; ext = r.ext; note = r.note;
+    }
+    if(!blob){ msg("this browser could not encode the loop"); }
+    else if(blob.size > LIMIT){
+      msg("loop is " + (blob.size/1048576).toFixed(1) + " MB — shorten it or drop the resolution");
+    } else {
+      const name = "emulsion_loop_"+P.W+"x"+P.H+"_"+Math.round(P.seed*10000)+"."+ext;
+      const status = await saveBlob(blob, name);
+      if(status === "saved" && note) msg("saved · " + name + note);
+    }
   } catch(err){
     console.error(err);
-    msg("recording failed · "+(err && err.message ? err.message : "unknown error"));
+    msg("recording failed · " + (err && err.message ? err.message : "unknown error"));
   } finally {
     busy.classList.remove("on");
+    busy.textContent = "rendering full size…";
     exporting = false; recording = false;
     if(P.animate) animT0 = performance.now();
     render();
