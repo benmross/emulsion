@@ -28,13 +28,16 @@ The pipeline, in order:
 | **Optics** | A 10-tap kernel blurs the field in scene units, stretchable along an axis for directional motion blur. Because it is applied to the field and not to pixels, blur is resolution-independent. |
 | **Motion** | The field walks a closed path in noise space and band phase advances exactly 2π per loop, so an animation returns to frame one exactly — loops are seamless by construction, not by crossfade. |
 | **Tone** | Exposure, black point, gamma, contrast pivot, gloss (a specular contour sharpener), vignette. |
-| **Palette** | Luminance maps through a three-stop gradient — shadow, mid, light — with a movable mid stop and an invert. |
+| **Palette** | Luminance maps through a three-stop gradient — shadow, mid, light — with a movable mid stop and an invert. Thirteen presets from Silver and Ash to Cyanotype, Rosé, and Neon, or set the three stops by hand. |
 | **Grain** | Cell noise sized in *output* pixels, with density (what fraction of cells carry a speck) and midtone bias (film weights grain toward mid values; dial it down for grain that reaches into the shadows). Optional chroma grain. |
 | **Surface** | An optional overlay: diagonal dashes, brushed streaks, weave, or a luminance-sized halftone dot screen applied after tone mapping. |
 
 ## Plates
 
-Fourteen presets, each setting the full form/tone/grain stack:
+Fourteen presets, each setting the full form/optics/tone/grain stack. A plate is
+a *look*, not a working setup: picking one moves only the keys it owns and
+resets the ones it does not name, while your palette, mid stop, output size,
+seed, and motion settings stay exactly where you put them.
 
 ![Contact sheet of all fourteen plates](docs/recipes.png)
 

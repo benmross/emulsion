@@ -5,12 +5,38 @@ function el(tag, cls, parent){
   if(parent) parent.appendChild(n);
   return n;
 }
+const SVG = d => '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" '
+  + 'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+const ICONS = {
+  Recipes: SVG('<path d="M8 1.6 1.8 4.7 8 7.8l6.2-3.1L8 1.6Z"/><path d="M1.8 8 8 11.1 14.2 8"/><path d="M1.8 11.3 8 14.4l6.2-3.1"/>'),
+  Form:    SVG('<path d="M9.6 1.9c2.6.7 4.2 3.2 3.9 6-.3 3.1-2.6 6.2-5.2 6.2-2.4 0-4.2-2.4-4.2-5.3 0-3.6 2.4-7.7 5.5-6.9Z"/>'),
+  Optics:  SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8 11.6 8M8 14.2 4.4 8M13.4 5.5 6.2 6.4M2.6 10.5l7.2-.9M13 11.2 9.4 5M3 4.8l3.6 6.2"/>'),
+  Motion:  SVG('<path d="M1.8 5.4c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/><path d="M1.8 10.6c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/>'),
+  Tone:    SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4Z" fill="currentColor" stroke="none"/>'),
+  Palette: SVG('<path d="M8 1.8s4.3 4.9 4.3 7.6A4.3 4.3 0 0 1 8 13.9a4.3 4.3 0 0 1-4.3-4.5C3.7 6.7 8 1.8 8 1.8Z"/>'),
+  Grain:   SVG('<circle cx="4" cy="4.2" r=".9"/><circle cx="11.4" cy="3.6" r=".9"/><circle cx="7.6" cy="7.4" r=".9"/><circle cx="3.4" cy="11" r=".9"/><circle cx="12" cy="10.6" r=".9"/><circle cx="8.2" cy="13" r=".9"/>'),
+  Surface: SVG('<path d="M1.8 9.6 9.6 1.8M5.2 13.4 13.4 5.2M1.8 14.2 3.2 12.8M12.4 2.6l1.8-1.8"/>'),
+  Output:  SVG('<path d="M8 1.9v7.4m0 0 2.8-2.8M8 9.3 5.2 6.5"/><path d="M2.4 11v2.2c0 .5.4.9.9.9h9.4c.5 0 .9-.4.9-.9V11"/>')
+};
+const CHEVRON = SVG('<path d="M4 6.2 8 10l4-3.8"/>');
+
 const SECTIONS = [];
 function section(title){
   const s = el("section","sec",rail);
   s.dataset.sec = title;
   SECTIONS.push(s);
-  el("h2",null,s).textContent = title;
+  const h = el("h2",null,s);
+  const head = el("button","sechead",h);
+  head.type = "button";
+  head.setAttribute("aria-expanded","true");
+  head.innerHTML = '<span class="ico">'+(ICONS[title]||"")+'</span>'
+                 + '<span class="lbl">'+title+'</span>'
+                 + '<span class="hr"></span>'
+                 + '<span class="chev">'+CHEVRON+'</span>';
+  head.addEventListener("click", ()=>{
+    const collapsed = s.classList.toggle("collapsed");
+    head.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  });
   return el("div","stack",s);
 }
 function slider(host, key, label, min, max, step, fmt, onAfter){
@@ -160,12 +186,20 @@ slider(gTex,"texscale","Texture scale",0.2,3,0.01, v=>v.toFixed(2)+"×", refresh
 
 const gOut = section("Output");
 const sel = el("select","sel",gOut);
-SIZES.forEach((s,i)=>{ const o=el("option",null,sel); o.value=i; o.textContent=s.name; });
+SIZES.forEach(group=>{
+  const g = el("optgroup",null,sel);
+  g.label = group.group;
+  group.items.forEach(item=>{
+    const o = el("option",null,g);
+    o.value = item.w+"x"+item.h;
+    o.textContent = item.w+" × "+item.h+" — "+item.name;
+  });
+});
 const oCustom = el("option",null,sel); oCustom.value="custom"; oCustom.textContent="Custom";
 sel.addEventListener("change", ()=>{
   if(sel.value==="custom") return;
-  const s = SIZES[parseInt(sel.value,10)];
-  P.W=s.w; P.H=s.h; syncDims(); schedule(); refreshThumbs();
+  const [w,h] = sel.value.split("x").map(Number);
+  P.W=w; P.H=h; syncDims(); schedule(); refreshThumbs();
 });
 const dims = el("div","dims",gOut);
 function dimField(key,label){
@@ -185,8 +219,8 @@ dimField("W","Width");
 el("div","x",dims).textContent = "×";
 dimField("H","Height");
 function syncDims(){
-  const idx = SIZES.findIndex(s=>s.w===P.W && s.h===P.H);
-  sel.value = idx>=0 ? String(idx) : "custom";
+  const key = P.W+"x"+P.H;
+  sel.value = sel.querySelector('option[value="'+key+'"]') ? key : "custom";
   dims.querySelectorAll("input").forEach((i,n)=> i.value = n===0 ? P.W : P.H);
   updateStatus();
 }

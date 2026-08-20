@@ -1,14 +1,16 @@
 /* ============================== recipes, shuffle, export ============================== */
-const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize","fill","fps","looplen"];
-const FORM_BASE = {};
-for(const k in DEFAULTS) if(KEEP.indexOf(k)<0) FORM_BASE[k] = DEFAULTS[k];
+/* Move only the keys a plate owns; anything it does not name goes back to its
+   default, and everything outside LOOK is left exactly as the user set it. */
+function applyRecipe(r){
+  for(const k of LOOK) P[k] = (k in r.p) ? r.p[k] : DEFAULTS[k];
+}
 
 let activeRecipe = 0;
 RECIPES.forEach((r,i)=>{
   const b = el("button","chip",recipeBar);
   b.type="button"; b.textContent=r.name;
   b.addEventListener("click", ()=>{
-    Object.assign(P, FORM_BASE, r.p);
+    applyRecipe(r);
     activeRecipe = i;
     syncRecipes(); syncAll(); schedule(); refreshThumbs();
   });
