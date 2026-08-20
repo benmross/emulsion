@@ -486,12 +486,16 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
 
   .sheetbody{display:flex;flex-direction:column;flex:0 0 auto;height:var(--panel-h);overflow:hidden}
 
-  /* one group at a time, its controls live and in reach */
+  /* one group at a time, its controls live and in reach. A group short enough
+     to fit sits centred; safe center falls back to the top when it overflows,
+     and to plain flex-start on anything that does not know the keyword. */
   .sec{
-    display:none;border-bottom:0;padding:5px 14px 16px;
+    display:none;border-bottom:0;padding:10px 14px;
     flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+    flex-direction:column;justify-content:safe center;
   }
-  .sec.on{display:block}
+  .sec.on{display:flex}
+  .sec > .stack{flex:0 0 auto}
   .sec[data-sec="Recipes"]{display:none}     /* the strip stands in for it */
   .sec > h2{display:none}
   .stack{gap:15px}
@@ -502,15 +506,14 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
     font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--dim);
   }
-  .row{
-    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);
-    align-items:center;gap:12px;
-  }
+  /* 96px clears the longest label there is, so the track starts as far left
+     as it can without the names wrapping */
+  .row{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:10px}
   .row .top{flex-direction:column;align-items:flex-start;gap:0}
   .row label{font-size:13.5px;line-height:1.25}
   .row .val{font-size:11px;color:var(--mute)}
   .toggle{min-height:40px}
-  .stack > .field{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px}
+  .stack > .field{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:10px}
   .stack > .field > span{margin:0}
 
   /* the tab bar never leaves */
@@ -531,7 +534,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   body.sheet-min .sheetbody{display:none!important}
   body.sheet-min .grab::before{background:#4E525A}
 
-  .peekplates{display:flex;flex:1 1 auto;min-height:0;padding:0 12px 10px}
+  .peekplates{display:flex;align-items:center;flex:1 1 auto;min-height:0;padding:0 12px}
   .peekplates button{width:auto;height:100%;max-height:132px}
 
   /* pickers that would eat the whole panel as a grid run sideways instead */
