@@ -3,7 +3,9 @@ const canvas = document.getElementById("gl");
 const frame  = document.getElementById("frame");
 const plate  = document.querySelector(".plate");
 const rail   = document.getElementById("rail");
+const sheetBody = document.getElementById("sheetbody");
 const busy   = document.getElementById("busy");
+const guides = document.getElementById("guides");
 const stMsg  = document.getElementById("stMsg");
 
 let draw = null, drawThumb = null, thumbCanvas = null;
@@ -36,16 +38,16 @@ const MOBILE = window.matchMedia("(max-width:980px)");
 function render(){
   if(!draw || recording) return;
   const asp = P.W / P.H;
-  const immersive = document.body.classList.contains("immersive") || MOBILE.matches;
   let dispW, dispH;
-  if(immersive){
+  if(document.body.classList.contains("immersive")){
     // fill crops to the screen (how a wallpaper actually sits); fit shows the whole plate
     const vw = window.innerWidth, vh = window.innerHeight;
     dispW = P.fill ? Math.max(vw, vh*asp) : Math.min(vw, vh*asp);
     dispH = dispW / asp;
   } else {
+    // on a phone the plate owns everything above the sheet, whole and uncropped
     const box = plate.getBoundingClientRect();
-    const pad = COARSE ? 22 : 52;
+    const pad = MOBILE.matches ? 8 : (COARSE ? 22 : 52);
     const availW = Math.max(120, box.width  - pad);
     const availH = Math.max(120, box.height - pad);
     dispW = Math.min(availW, availH*asp);
@@ -60,6 +62,10 @@ function render(){
   previewScale = rw / P.W;
   canvas.style.width  = Math.round(dispW)+"px";
   canvas.style.height = Math.round(dispH)+"px";
+  if(guides){                        // the guides ride the picture, not the frame
+    guides.style.width  = Math.round(dispW)+"px";
+    guides.style.height = Math.round(dispH)+"px";
+  }
   rw = Math.max(rw,2); rh = Math.max(rh,2);
   paint();
   updateStatus();
@@ -105,6 +111,8 @@ function msg(text){
   stMsg.textContent = text;
   clearTimeout(msgTimer);
   msgTimer = setTimeout(()=>{ stMsg.textContent=""; }, 5000);
+  // the status bar is desktop-only, so a phone hears back over the plate
+  if(MOBILE.matches && typeof flashCaption === "function") flashCaption(text);
 }
 
 /* Every picker is a contact sheet rendered in the user's own palette, so the

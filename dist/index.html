@@ -31,6 +31,7 @@
   --r:10px;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%}
 body{
   background:var(--ink);
@@ -130,7 +131,10 @@ button,input,select{font:inherit;color:inherit}
   box-shadow:0 40px 90px -30px #000,0 0 0 1px rgba(0,0,0,.6),0 2px 40px rgba(0,0,0,.7);
 }
 canvas#gl{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
-.guides{position:absolute;inset:0;display:none;pointer-events:none;line-height:1}
+.guides{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:100%;height:100%;display:none;pointer-events:none;line-height:1;
+}
 .frame.guided .guides{display:block}
 .guides .g{position:absolute;border:1px dashed rgba(198,150,74,.36);border-radius:5px}
 .guides .g span{
@@ -322,11 +326,10 @@ body.attracting .caption b,
 body.captioning .caption b{animation:capfade .4s ease}
 @keyframes capfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-/* the sheet's peek row (mobile) */
-.peek{display:none}
+/* the bottom sheet (mobile) */
 .grab{
-  display:block;width:100%;padding:13px 0 11px;background:none;border:0;
-  cursor:grab;touch-action:none;
+  display:none;width:100%;padding:11px 0 9px;background:none;border:0;
+  cursor:grab;touch-action:none;flex:0 0 auto;
 }
 .grab:active{cursor:grabbing}
 .grab::before{
@@ -350,15 +353,33 @@ body.captioning .caption b{animation:capfade .4s ease}
   font-family:"JetBrains Mono",monospace;font-size:7px;letter-spacing:.04em;text-transform:uppercase;
   color:#DEDCD7;background:linear-gradient(transparent,rgba(0,0,0,.85) 60%);
 }
-.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:0 12px 4px}
-.act{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  min-height:52px;border:1px solid var(--line);background:#0C0D0F;border-radius:11px;
-  color:var(--mute);font-size:11px;cursor:pointer;
+
+/* the tab's own view: a strip of plates, or its options as one compact list */
+.panel,.pnav{display:none}
+.optlist{display:flex;flex-direction:column;gap:6px;padding:2px 12px 10px}
+.optrow{
+  display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:0 13px;
+  border:1px solid var(--line);background:#0C0D0F;border-radius:11px;
+  color:var(--text);font-size:14px;text-align:left;cursor:pointer;
 }
-.act span{font-size:15px;line-height:1;color:var(--text)}
-.act.primary{background:var(--gold-soft);border-color:var(--gold-line);color:var(--gold-txt)}
-.act.primary span{color:var(--gold-hi)}
+.optrow .olbl{flex:1 1 auto;min-width:0}
+.optrow .oval{
+  font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--mute);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.optrow .otint{width:28px;height:13px;border-radius:3px;flex:0 0 auto}
+.optrow .ochev{display:flex;flex:0 0 auto;color:var(--dim);transform:rotate(-90deg)}
+.optrow.go{background:var(--gold-soft);border-color:var(--gold-line);color:var(--gold-txt)}
+.pback{
+  display:flex;align-items:center;gap:6px;flex:0 0 auto;min-height:36px;padding:0 12px;
+  border:1px solid var(--line);background:#0C0D0F;border-radius:999px;
+  color:var(--text);font-size:13px;cursor:pointer;
+}
+.ptitle{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--mute);overflow:hidden;white-space:nowrap;
+}
+.group{display:flex;flex-direction:column;gap:13px}
 
 /* shape picker */
 .shapes{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
@@ -427,53 +448,97 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
 .nogl{max-width:38ch;margin:auto;text-align:center;color:var(--mute);line-height:1.6;font-size:13px}
 
 @media (max-width:980px){
-  /* the plate fills the screen; everything else floats over it and can be dismissed */
+  /* The plate sits whole in the space above the sheet; the sheet is a panel
+     over a permanent tab bar, and the top bar floats over the picture. */
+  :root{--panel-h:clamp(150px,24dvh,200px)}
   .app{display:block;height:100dvh;overflow:hidden}
   .stage{position:fixed;inset:0;background:#000}
-  .plate{position:absolute;inset:0;padding:0;background:#000;background-image:none}
+  .plate{
+    position:absolute;left:0;right:0;top:0;bottom:var(--sheet-h,240px);
+    padding:0;background:#000;background-image:none;
+  }
   .frame{
     position:absolute;inset:0;max-width:none;max-height:none;
     border:0;border-radius:0;box-shadow:none;overflow:hidden;
     display:grid;place-items:center;
   }
-  canvas#gl{max-width:none;max-height:none}
+  canvas#gl{
+    max-width:none;max-height:none;border-radius:13px;
+    box-shadow:0 22px 50px -26px #000, 0 0 0 1px rgba(255,255,255,.07);
+  }
   .status{display:none}
 
   .topbar{
     position:fixed;top:0;left:0;right:0;z-index:15;border-bottom:0;backdrop-filter:none;
-    padding:calc(9px + env(safe-area-inset-top)) 14px 22px;
-    background:linear-gradient(rgba(5,6,7,.78),rgba(5,6,7,0));
-    transition:opacity .22s ease, transform .22s ease;
+    padding:calc(9px + env(safe-area-inset-top)) 14px 26px;
+    background:linear-gradient(rgba(5,6,7,.72),rgba(5,6,7,0));
   }
-  .topbar .tools{display:none}
+  .topbar .tools,.topbar .rule,.topbar .now{display:none}
   .mark h1{font-size:15px}
-  .rule{display:block;height:13px}
-  .now{font-size:10px;letter-spacing:.13em}
-  .viewtools{display:flex;top:calc(11px + env(safe-area-inset-top));right:12px}
 
-  body.ui-off .topbar{opacity:0;transform:translateY(-10px);pointer-events:none}
-  body.ui-off .viewtools{opacity:0;pointer-events:none}
-  body.ui-off .rail{transform:translateY(115%);pointer-events:none}
+  /* shuffle · save · share */
+  .viewtools{
+    display:flex;position:fixed;z-index:16;
+    top:calc(7px + env(safe-area-inset-top));right:12px;gap:7px;
+  }
+  .vbtn{
+    display:grid;place-items:center;width:38px;height:38px;padding:0;
+    border-radius:50%;background:rgba(10,11,13,.55);
+  }
+  .vbtn:active{background:rgba(30,32,36,.8)}
 
-  /* bottom sheet: peek by default, full controls when opened */
+  /* ---------- bottom sheet ---------- */
   .rail{
     position:fixed;left:0;right:0;bottom:0;z-index:20;height:auto;
-    max-height:none;border:0;border-top:1px solid rgba(255,255,255,.09);
-    border-radius:16px 16px 0 0;background:rgba(13,14,16,.9);backdrop-filter:blur(20px);
+    display:flex;flex-direction:column;max-height:none;
+    border:0;border-top:1px solid rgba(255,255,255,.09);
+    border-radius:16px 16px 0 0;background:rgba(13,14,16,.92);backdrop-filter:blur(20px);
     box-shadow:0 -26px 54px -30px #000;overflow:hidden;
-    padding-bottom:calc(8px + env(safe-area-inset-bottom));
+    padding-bottom:calc(4px + env(safe-area-inset-bottom));
     transition:transform .26s ease;
   }
-  .peek{display:block}
-  .tabs,.sec{display:none}
-  body.sheet-open .rail{max-height:80dvh;overflow-y:auto}
-  body.sheet-open .tabs{display:flex}
-  body.sheet-open .sec.on{display:block}
-  body.sheet-open .peekplates{display:none}
 
-  .sec{padding:14px 14px 22px}
+  /* tapped the plate: nothing but the picture */
+  body.ui-off .rail{transform:translateY(105%);pointer-events:none}
+  body.ui-off .topbar{opacity:0;transform:translateY(-10px);pointer-events:none}
+  body.ui-off .viewtools{opacity:0;pointer-events:none}
+  .topbar,.viewtools{transition:opacity .22s ease, transform .22s ease}
+  .grab{display:block}
+
+  .sheetbody{display:flex;flex-direction:column;flex:0 0 auto;height:var(--panel-h);overflow:hidden}
+  .panel{display:block;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  body[data-view="detail"] .panel{display:none}
+  body[data-view="detail"] .pnav{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:0 12px 9px}
+
+  /* one section at a time, and only once an option is opened */
+  .sec{
+    display:none;border-bottom:0;padding:2px 14px 14px;
+    flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  }
+  body[data-view="detail"] .sec.on{display:block}
   .sec > h2{display:none}
   .stack{gap:19px}
+
+  /* the tab bar never leaves */
+  .tabs{
+    display:flex;position:static;flex:0 0 auto;gap:7px;
+    padding:9px 12px 3px;background:transparent;
+    border-bottom:0;border-top:1px solid var(--line-soft);
+  }
+  .tab{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    min-width:64px;min-height:54px;padding:6px 9px;border-radius:12px;
+    font-size:10.5px;letter-spacing:.01em;
+  }
+  .tab .tico{display:flex;color:var(--text);opacity:.85}
+  .tab[aria-selected="true"] .tico{color:var(--gold-hi);opacity:1}
+
+  /* dragged or tapped down: just the tab bar, and the plate takes the room */
+  body.sheet-min .sheetbody{display:none!important}
+  body.sheet-min .grab::before{background:#4E525A}
+
+  .peekplates{height:100%;padding:0 12px 10px}
+  .peekplates button{width:auto;height:100%;max-height:132px}
   .plates{grid-template-columns:repeat(4,1fr)}
 
   /* touch targets */
@@ -481,11 +546,11 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   .btn.wide{min-height:48px}
   .row label{font-size:14px}
   .row .val{font-size:12.5px}
-  input[type=range]{height:36px;touch-action:none}
+  input[type=range]{height:40px;touch-action:none}
   input[type=range]::-webkit-slider-runnable-track{height:5px}
   input[type=range]::-moz-range-track{height:5px}
-  input[type=range]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-8.5px}
-  input[type=range]::-moz-range-thumb{width:22px;height:22px}
+  input[type=range]::-webkit-slider-thumb{width:24px;height:24px;margin-top:-9.5px}
+  input[type=range]::-moz-range-thumb{width:24px;height:24px}
   .chip{padding:10px 14px;font-size:13px}
   .seg button{padding:11px 4px;font-size:12.5px}
   .switch{width:46px;height:26px}
@@ -496,11 +561,11 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   .field input,select.sel{padding:12px 10px;font-size:16px}
   .dims .x{padding-top:20px}
   .hint{font-size:12px}
-  .caption{bottom:calc(198px + env(safe-area-inset-bottom))}
-  body.ui-off .caption{bottom:calc(40px + env(safe-area-inset-bottom))}
+  .caption{bottom:14px}                 /* the plate already stops at the sheet */
+  .caption b{font-size:16px;max-width:78vw;text-align:center}
 }
 @media (max-width:400px){
-  .act{font-size:10.5px;min-height:48px}
+  .tab{min-width:58px;font-size:10px}
   .peekplates button{width:52px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -536,10 +601,6 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
           <div class="g controls"><span>controls</span></div>
         </div>
         <div class="busy" id="busy">rendering full size…</div>
-        <div class="viewtools" id="viewtools">
-          <button class="vbtn" id="fitBtn" aria-label="Fit or fill the screen">Fit</button>
-          <button class="vbtn" id="hideBtn" aria-label="Hide the interface">Hide</button>
-        </div>
         <p class="caption" id="caption" aria-live="polite"><b>Limb</b><span>14 plates · tap to take over</span></p>
         <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
           <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
@@ -549,6 +610,31 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
           <button class="hudbtn" data-act="export">Export</button>
         </div>
       </div>
+    </div>
+
+    <!-- shuffle / save / share, top right on a phone -->
+    <div class="viewtools" id="viewtools">
+      <button class="vbtn" id="mShuffle" aria-label="Shuffle" title="Shuffle">
+        <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1.8 4.4h2.4c1 0 1.7.5 2.3 1.3l3 4c.6.8 1.3 1.3 2.3 1.3h2.2"/>
+          <path d="M1.8 11.7h2.4c1 0 1.7-.5 2.3-1.3l3-4c.6-.8 1.3-1.3 2.3-1.3h2.2"/>
+          <path d="m12.3 2.7 1.9 1.7-1.9 1.7M12.3 10 14.2 11.7l-1.9 1.7"/>
+        </svg>
+      </button>
+      <button class="vbtn" id="mSave" aria-label="Save image" title="Save image">
+        <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 1.9v7.7"/>
+          <path d="M4.9 6.5 8 9.6l3.1-3.1"/>
+          <path d="M2.5 10.9v1.7c0 .6.4 1 1 1h9c.6 0 1-.4 1-1v-1.7"/>
+        </svg>
+      </button>
+      <button class="vbtn" id="mShare" aria-label="Share" title="Share">
+        <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 10.2V1.9"/>
+          <path d="M5.3 4.6 8 1.9l2.7 2.7"/>
+          <path d="M4.9 6.6H3.5c-.6 0-1 .4-1 1v5.5c0 .6.4 1 1 1h9c.6 0 1-.4 1-1V7.6c0-.6-.4-1-1-1h-1.4"/>
+        </svg>
+      </button>
     </div>
 
     <footer class="status">
@@ -566,16 +652,27 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   </section>
 
   <aside class="rail" id="rail">
-    <div class="peek" id="peek">
-      <button class="grab" id="grab" aria-label="Show all controls" aria-expanded="false"></button>
-      <div class="peekplates" id="peekplates"></div>
-      <div class="acts">
-        <button class="act" id="actShuffle"><span>⤮</span>Shuffle</button>
-        <button class="act" id="actSave"><span>↓</span>Save</button>
-        <button class="act" id="actShare"><span>↗</span>Share</button>
-        <button class="act primary" id="actTune"><span>≡</span>Tune</button>
-      </div>
+    <button class="grab" id="grab" aria-label="Collapse the panel" aria-expanded="true"></button>
+
+    <!-- one fixed-height body: the group's contents, or one open option -->
+    <div class="sheetbody" id="sheetbody">
+    <div class="pnav" id="pnav">
+      <button class="pback" id="pback" type="button">
+        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 3.2 5 8l4.8 4.8"/></svg>
+        Back
+      </button>
+      <span class="ptitle" id="ptitle"></span>
     </div>
+
+    <!-- the selected tab's contents: the recipe strip, or its list of options -->
+    <div class="panel" id="panel">
+      <div class="peekplates" id="peekplates"></div>
+      <div class="optlist" id="optlist"></div>
+    </div>
+
+      <!-- control sections are appended here -->
+    </div>
+
     <nav class="tabs" id="tabs" role="tablist" aria-label="Control groups"></nav>
   </aside>
 </div>
@@ -963,7 +1060,9 @@ const canvas = document.getElementById("gl");
 const frame  = document.getElementById("frame");
 const plate  = document.querySelector(".plate");
 const rail   = document.getElementById("rail");
+const sheetBody = document.getElementById("sheetbody");
 const busy   = document.getElementById("busy");
+const guides = document.getElementById("guides");
 const stMsg  = document.getElementById("stMsg");
 
 let draw = null, drawThumb = null, thumbCanvas = null;
@@ -996,16 +1095,16 @@ const MOBILE = window.matchMedia("(max-width:980px)");
 function render(){
   if(!draw || recording) return;
   const asp = P.W / P.H;
-  const immersive = document.body.classList.contains("immersive") || MOBILE.matches;
   let dispW, dispH;
-  if(immersive){
+  if(document.body.classList.contains("immersive")){
     // fill crops to the screen (how a wallpaper actually sits); fit shows the whole plate
     const vw = window.innerWidth, vh = window.innerHeight;
     dispW = P.fill ? Math.max(vw, vh*asp) : Math.min(vw, vh*asp);
     dispH = dispW / asp;
   } else {
+    // on a phone the plate owns everything above the sheet, whole and uncropped
     const box = plate.getBoundingClientRect();
-    const pad = COARSE ? 22 : 52;
+    const pad = MOBILE.matches ? 8 : (COARSE ? 22 : 52);
     const availW = Math.max(120, box.width  - pad);
     const availH = Math.max(120, box.height - pad);
     dispW = Math.min(availW, availH*asp);
@@ -1020,6 +1119,10 @@ function render(){
   previewScale = rw / P.W;
   canvas.style.width  = Math.round(dispW)+"px";
   canvas.style.height = Math.round(dispH)+"px";
+  if(guides){                        // the guides ride the picture, not the frame
+    guides.style.width  = Math.round(dispW)+"px";
+    guides.style.height = Math.round(dispH)+"px";
+  }
   rw = Math.max(rw,2); rh = Math.max(rh,2);
   paint();
   updateStatus();
@@ -1065,6 +1168,8 @@ function msg(text){
   stMsg.textContent = text;
   clearTimeout(msgTimer);
   msgTimer = setTimeout(()=>{ stMsg.textContent=""; }, 5000);
+  // the status bar is desktop-only, so a phone hears back over the plate
+  if(MOBILE.matches && typeof flashCaption === "function") flashCaption(text);
 }
 
 /* Every picker is a contact sheet rendered in the user's own palette, so the
@@ -1109,7 +1214,7 @@ const ICONS = {
   Optics:  SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8 11.6 8M8 14.2 4.4 8M13.4 5.5 6.2 6.4M2.6 10.5l7.2-.9M13 11.2 9.4 5M3 4.8l3.6 6.2"/>'),
   Motion:  SVG('<path d="M1.8 5.4c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/><path d="M1.8 10.6c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/>'),
   Tone:    SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4Z" fill="currentColor" stroke="none"/>'),
-  Palette: SVG('<path d="M8 1.8s4.3 4.9 4.3 7.6A4.3 4.3 0 0 1 8 13.9a4.3 4.3 0 0 1-4.3-4.5C3.7 6.7 8 1.8 8 1.8Z"/>'),
+  Color:   SVG('<path d="M8 1.8s4.3 4.9 4.3 7.6A4.3 4.3 0 0 1 8 13.9a4.3 4.3 0 0 1-4.3-4.5C3.7 6.7 8 1.8 8 1.8Z"/>'),
   Grain:   SVG('<circle cx="4" cy="4.2" r=".9"/><circle cx="11.4" cy="3.6" r=".9"/><circle cx="7.6" cy="7.4" r=".9"/><circle cx="3.4" cy="11" r=".9"/><circle cx="12" cy="10.6" r=".9"/><circle cx="8.2" cy="13" r=".9"/>'),
   Surface: SVG('<path d="M1.8 9.6 9.6 1.8M5.2 13.4 13.4 5.2M1.8 14.2 3.2 12.8M12.4 2.6l1.8-1.8"/>'),
   Output:  SVG('<path d="M8 1.9v7.4m0 0 2.8-2.8M8 9.3 5.2 6.5"/><path d="M2.4 11v2.2c0 .5.4.9.9.9h9.4c.5 0 .9-.4.9-.9V11"/>')
@@ -1118,7 +1223,7 @@ const CHEVRON = SVG('<path d="M4 6.2 8 10l4-3.8"/>');
 
 const SECTIONS = [];
 function section(title){
-  const s = el("section","sec",rail);
+  const s = el("section","sec",sheetBody);
   s.dataset.sec = title;
   SECTIONS.push(s);
   const h = el("h2",null,s);
@@ -1133,7 +1238,20 @@ function section(title){
     const collapsed = s.classList.toggle("collapsed");
     head.setAttribute("aria-expanded", collapsed ? "false" : "true");
   });
-  return el("div","stack",s);
+  const stack = el("div","stack",s);
+  stack.dataset.sec = title;
+  return stack;
+}
+
+/* Every control registers itself here. On a phone a group is first shown as a
+   list of these — label and current value — and only the one you tap unfolds. */
+const OPTS = [];
+function reg(host, label, node, read, tint){
+  OPTS.push({sec:host.dataset.sec, label, node, read, tint, act:null, row:null});
+  return OPTS[OPTS.length-1];
+}
+function action(host, label, run){
+  OPTS.push({sec:host.dataset.sec, label, node:null, read:null, tint:null, act:run, row:null});
 }
 function slider(host, key, label, min, max, step, fmt, onAfter){
   const row = el("div","row",host);
@@ -1152,6 +1270,7 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
     if(onAfter) onAfter();
   });
   binders.push(sync); sync();
+  reg(host, label, row, ()=>fmt(P[key]));
   return row;
 }
 function toggle(host, key, label, onAfter){
@@ -1162,8 +1281,9 @@ function toggle(host, key, label, onAfter){
   const sync = ()=> b.setAttribute("aria-pressed", P[key] ? "true":"false");
   b.addEventListener("click", ()=>{ P[key] = !P[key]; sync(); schedule(); if(onAfter) onAfter(); });
   binders.push(sync); sync();
+  reg(host, label, row, ()=> P[key] ? "On" : "Off");
 }
-function segmented(host, key, options, onAfter){
+function segmented(host, key, label, options, onAfter){
   const seg = el("div","seg",host);
   seg.setAttribute("role","group");
   const btns = options.map((o,i)=>{
@@ -1174,6 +1294,7 @@ function segmented(host, key, options, onAfter){
   });
   const sync = ()=> btns.forEach((b,i)=> b.setAttribute("aria-pressed", P[key]===i ? "true":"false"));
   binders.push(sync); sync();
+  reg(host, label, seg, ()=> options[P[key]]);
 }
 
 /* ============================== rail ============================== */
@@ -1196,6 +1317,7 @@ function syncShapes(){
   shapes.querySelectorAll("button").forEach((b,i)=> b.setAttribute("aria-pressed", P.shape===i?"true":"false"));
 }
 binders.push(syncShapes); syncShapes();
+reg(gForm, "Shape", shapes, ()=> SHAPES[P.shape].name);
 
 const pct = v => Math.round(v*100)+"%";
 slider(gForm,"scale","Scale",0.25,4,0.01, v=>v.toFixed(2)+"×", refreshThumbs);
@@ -1223,11 +1345,14 @@ const fpsSel = el("select","sel",fpsField);
 [24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
 fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
 binders.push(()=>{ fpsSel.value = P.fps; });
+reg(gMotion, "Frame rate", fpsField, ()=> P.fps+" fps");
 
 const recBtn = el("button","btn wide",gMotion);
 recBtn.type="button"; recBtn.textContent="Record loop";
+action(gMotion, "Record loop", ()=> recBtn.click());
+/* only ever carries the "this browser can't encode video" line */
 const recNote = el("p","hint",gMotion);
-recNote.textContent = "Frames are rendered one at a time and stamped with exact times, so a heavy plate takes longer to record but never drops a frame. The loop is seamless: the field travels a closed path back to frame one.";
+recNote.hidden = true;
 
 const gTone = section("Tone");
 slider(gTone,"exposure","Exposure",-2,2,0.01, v=>(v>0?"+":"")+v.toFixed(2)+" EV", refreshThumbs);
@@ -1237,7 +1362,7 @@ slider(gTone,"gamma","Gamma",0.4,2.4,0.01, v=>v.toFixed(2), refreshThumbs);
 slider(gTone,"gloss","Gloss",0,1,0.01, pct, refreshThumbs);
 slider(gTone,"vignette","Vignette",0,1,0.01, pct, refreshThumbs);
 
-const gColor = section("Palette");
+const gColor = section("Color");
 const pals = el("div","palettes",gColor);
 PALETTES.forEach(p=>{
   const b = el("button","pal",pals);
@@ -1255,6 +1380,16 @@ function syncPals(){
        && p.c[2].toLowerCase()===P.c2.toLowerCase()) ? "true":"false");
   });
 }
+const palName = ()=>{
+  const hit = PALETTES.find(p =>
+    p.c[0].toLowerCase()===P.c0.toLowerCase() &&
+    p.c[1].toLowerCase()===P.c1.toLowerCase() &&
+    p.c[2].toLowerCase()===P.c2.toLowerCase());
+  return hit ? hit.name : "Custom";
+};
+const rampCss = ()=> "linear-gradient(90deg,"+P.c0+","+P.c1+","+P.c2+")";
+reg(gColor, "Palette", pals, palName, rampCss);
+
 const ramp = el("div","ramp",gColor);
 [["c0","Shadow"],["c1","Mid"],["c2","Light"]].forEach(([key,tag])=>{
   const w = el("label","sw",ramp);
@@ -1265,6 +1400,7 @@ const ramp = el("div","ramp",gColor);
   binders.push(sync); sync();
 });
 binders.push(syncPals); syncPals();
+reg(gColor, "Color stops", ramp, null, rampCss);
 slider(gColor,"mid","Mid stop",0.1,0.9,0.005, pct, refreshThumbs);
 toggle(gColor,"invert","Invert tones", refreshThumbs);
 
@@ -1276,12 +1412,13 @@ slider(gGrain,"gresp","Midtone bias",0,1,0.01, pct, refreshThumbs);
 toggle(gGrain,"chroma","Color grain", refreshThumbs);
 
 const gTex = section("Surface");
-segmented(gTex,"tex",["None","Dash","Brush","Weave","Dots"], refreshThumbs);
+segmented(gTex,"tex","Texture",["None","Dash","Brush","Weave","Dots"], refreshThumbs);
 slider(gTex,"texamt","Depth",0,1,0.01, pct, refreshThumbs);
 slider(gTex,"texscale","Texture scale",0.2,3,0.01, v=>v.toFixed(2)+"×", refreshThumbs);
 
 const gOut = section("Output");
-const sel = el("select","sel",gOut);
+const sizeBox = el("div","group",gOut);
+const sel = el("select","sel",sizeBox);
 SIZES.forEach(group=>{
   const g = el("optgroup",null,sel);
   g.label = group.group;
@@ -1297,7 +1434,7 @@ sel.addEventListener("change", ()=>{
   const [w,h] = sel.value.split("x").map(Number);
   P.W=w; P.H=h; syncDims(); schedule(); refreshThumbs();
 });
-const dims = el("div","dims",gOut);
+const dims = el("div","dims",sizeBox);
 function dimField(key,label){
   const f = el("div","field",dims);
   el("span",null,f).textContent = label;
@@ -1321,6 +1458,7 @@ function syncDims(){
   updateStatus();
 }
 binders.push(syncDims);
+reg(gOut, "Size", sizeBox, ()=> P.W+" × "+P.H);
 
 const seedRow = el("div","seedrow",gOut);
 const seedField = el("div","field",seedRow);
@@ -1336,6 +1474,7 @@ binders.push(syncSeed); syncSeed();
 const newSeed = el("button","btn",seedRow);
 newSeed.type="button"; newSeed.textContent="New seed";
 newSeed.addEventListener("click", ()=>{ P.seed = Math.round(Math.random()*9999)/10000; syncSeed(); schedule(); refreshThumbs(); });
+reg(gOut, "Seed", seedRow, ()=> String(Math.round(P.seed*10000)));
 
 toggle(gOut,"guides","Lock screen guides", ()=> frame.classList.toggle("guided", P.guides));
 binders.push(()=> frame.classList.toggle("guided", !!P.guides));
@@ -1349,6 +1488,7 @@ const fmtSel = el("select","sel",fmtField);
 fmtSel.value = P.fmt;
 fmtSel.addEventListener("change", ()=>{ P.fmt = fmtSel.value; });
 binders.push(()=>{ fmtSel.value = P.fmt; });
+reg(gOut, "File format", fmtField, ()=> P.fmt.toUpperCase());
 
 const setRow = el("div","pair",gOut);
 const setField = el("div","field",setRow);
@@ -1360,26 +1500,103 @@ setSel.addEventListener("change", ()=>{ P.setsize = parseInt(setSel.value,10); }
 binders.push(()=>{ setSel.value = P.setsize; });
 const setBtn = el("button","btn",setRow);
 setBtn.type="button"; setBtn.textContent="Export set";
+reg(gOut, "Export set", setRow, ()=> P.setsize+" stills");
 
 const linkBtn = el("button","btn wide",gOut);
 linkBtn.type="button"; linkBtn.textContent="Copy link to this look";
+action(gOut, "Copy link to this look", ()=> linkBtn.click());
 
-const hint = el("p","hint",gOut.parentElement);
-hint.innerHTML = 'Grain is measured in <em>output</em> pixels — the preview scales it to match, so a 1&nbsp;px grain stays 1&nbsp;px in the export. <b>Export set</b> writes a batch of seeds for an iPhone Photo&nbsp;Shuffle album; <b>Record loop</b> writes a video for a Live&nbsp;Photo lock screen. Press <kbd>R</kbd> to reshuffle.';
+/* ---------- one group at a time on small screens ----------
+   The tab bar is permanent; above it sits either the group's contents (the
+   plate strip for Recipes, a list of options for everything else) or, once an
+   option is tapped, that one control on its own with a way back. */
+const tabsEl  = document.getElementById("tabs");
+const optList = document.getElementById("optlist");
+const strip   = document.getElementById("peekplates");
+const ptitle  = document.getElementById("ptitle");
 
-/* ---------- one group at a time on small screens ---------- */
-const tabsEl = document.getElementById("tabs");
 SECTIONS.forEach((sec,i)=>{
   const b = el("button","tab",tabsEl);
-  b.type="button"; b.textContent = sec.dataset.sec;
+  b.type="button";
   b.setAttribute("role","tab");
+  b.innerHTML = '<span class="tico">'+(ICONS[sec.dataset.sec]||"")+'</span>'
+              + '<span class="tlbl">'+sec.dataset.sec+'</span>';
   b.addEventListener("click", ()=> setTab(i));
 });
+
+/* The handle trades the panel for more picture; the tab bar always stays. */
+const grabEl = document.getElementById("grab");
+function setMin(min){
+  document.body.classList.toggle("sheet-min", min);
+  grabEl.setAttribute("aria-expanded", min ? "false" : "true");
+  grabEl.setAttribute("aria-label", min ? "Show the controls" : "Collapse the controls");
+}
+
+let openOptId = -1;
+function buildList(name){
+  optList.textContent = "";
+  OPTS.forEach((o,i)=>{
+    o.row = null;
+    if(o.sec !== name) return;
+    const b = el("button", o.act ? "optrow go" : "optrow", optList);
+    b.type = "button";
+    el("span","olbl",b).textContent = o.label;
+    if(!o.act){
+      if(o.tint) el("i","otint",b);
+      el("span","oval",b);
+      el("span","ochev",b).innerHTML = CHEVRON;
+    }
+    b.addEventListener("click", ()=> o.act ? o.act() : openOpt(i));
+    o.row = b;
+  });
+  syncList();
+}
+function syncList(){
+  OPTS.forEach(o=>{
+    if(!o.row) return;
+    const v = o.row.querySelector(".oval");
+    if(v && o.read) v.textContent = o.read();
+    const t = o.row.querySelector(".otint");
+    if(t && o.tint) t.style.background = o.tint();
+  });
+}
+binders.push(syncList);
+
+/* Opening an option hides its siblings, so the section shows just that one. */
+function openOpt(i){
+  const o = OPTS[i];
+  if(!o || !o.node) return;
+  openOptId = i;
+  Array.prototype.forEach.call(o.node.parentElement.children, c=>{
+    c.style.display = c === o.node ? "" : "none";
+  });
+  ptitle.textContent = o.label;
+  document.body.dataset.view = "detail";
+  rail.scrollTop = 0;
+}
+function closeOpt(){
+  const o = OPTS[openOptId];
+  if(o && o.node){
+    Array.prototype.forEach.call(o.node.parentElement.children, c=>{ c.style.display = ""; });
+  }
+  openOptId = -1;
+  document.body.dataset.view = "list";
+  syncList();
+}
+document.getElementById("pback").addEventListener("click", closeOpt);
+
 function setTab(i){
+  setMin(false);            // a tapped category always shows its contents
+  closeOpt();
   SECTIONS.forEach((s,n)=> s.classList.toggle("on", n===i));
   tabsEl.querySelectorAll(".tab").forEach((b,n)=> b.setAttribute("aria-selected", n===i ? "true":"false"));
+  const name = SECTIONS[i].dataset.sec;
+  const isRecipes = name === "Recipes";
+  strip.hidden = !isRecipes;
+  optList.hidden = isRecipes;
+  buildList(name);
   const active = tabsEl.querySelector('.tab[aria-selected="true"]');
-  if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"nearest"});
+  if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"center"});
   rail.scrollTop = 0;
 }
 setTab(0);
@@ -1588,7 +1805,7 @@ function syncRecipes(){
   });
   const name = activeRecipe >= 0 ? RECIPES[activeRecipe].name : SHAPES[P.shape].name+" · shuffled";
   document.getElementById("nowName").innerHTML = "<i>plate</i> <b>"+name+"</b>";
-  const tile = peekPlates.querySelector('[aria-pressed="true"]');
+  const tile = peekPlates.hidden ? null : peekPlates.querySelector('[aria-pressed="true"]');
   if(tile && tile.scrollIntoView) tile.scrollIntoView({block:"nearest", inline:"center", behavior:"smooth"});
 }
 binders.push(syncRecipes);
@@ -1696,11 +1913,11 @@ function toggleImmersive(){
 immerseBtn.addEventListener("click", toggleImmersive);
 document.addEventListener("fullscreenchange", ()=>{ if(!fsEl()) exitImmersive(); else render(); });
 
-/* a tap on the plate opens it full-bleed on touch devices, and hides the HUD once there */
+/* a tap on the plate clears the interface off it, and brings it back */
 canvas.addEventListener("click", ()=>{
   stopAttract();
-  if(document.body.classList.contains("immersive")) document.body.classList.toggle("hud-off");
-  else if(MOBILE.matches) document.body.classList.toggle("ui-off");
+  if(document.body.classList.contains("immersive")){ document.body.classList.toggle("hud-off"); return; }
+  if(MOBILE.matches) setBare(!document.body.classList.contains("ui-off"));
 });
 
 function syncHud(){
@@ -1882,6 +2099,7 @@ const VIDEO = pickVideo();
 if(!VIDEO && !canEncodeVideo()){
   recBtn.disabled = true;
   recBtn.title = "This browser can't encode video";
+  recNote.hidden = false;
   recNote.textContent = "Recording needs WebCodecs or MediaRecorder — Chrome, Edge, or a current Firefox or Safari.";
 }
 
@@ -1978,67 +2196,49 @@ recBtn.addEventListener("click", async ()=>{
 });
 
 /* ============================== sheet + link ============================== */
-const grab = document.getElementById("grab");
-const actTune = document.getElementById("actTune");
-const fitBtn = document.getElementById("fitBtn");
-
-function setSheet(open){
-  document.body.classList.toggle("sheet-open", open);
-  grab.setAttribute("aria-expanded", open ? "true" : "false");
-  actTune.querySelector("span").textContent = open ? "▾" : "≡";
-  actTune.lastChild.nodeValue = open ? "Close" : "Tune";
-}
-function toggleSheet(){ setSheet(!document.body.classList.contains("sheet-open")); }
-
-/* Drag the handle: up opens the controls, down collapses them, and down again
-   from the peek state clears the interface off the plate. */
+/* Drag the handle down to clear the controls off the screen, up to bring them
+   back; a plain tap does the same thing. */
 let dragFrom = null, dragDy = 0, swallowClick = false;
-grab.addEventListener("pointerdown", e=>{
+grabEl.addEventListener("pointerdown", e=>{
   if(!MOBILE.matches) return;
   dragFrom = e.clientY; dragDy = 0;
-  rail.style.transition = "none";
-  if(grab.setPointerCapture) grab.setPointerCapture(e.pointerId);
+  if(grabEl.setPointerCapture) grabEl.setPointerCapture(e.pointerId);
 });
-grab.addEventListener("pointermove", e=>{
+grabEl.addEventListener("pointermove", e=>{
   if(dragFrom === null) return;
   dragDy = e.clientY - dragFrom;
-  const open = document.body.classList.contains("sheet-open");
-  let t = dragDy;
-  if(open && t < 0) t = t / 5;                    // already as far up as it goes
-  if(!open && t < 0) t = Math.max(t, -170);       // peeking at the panel above
-  rail.style.transform = "translateY(" + t + "px)";
 });
 function endDrag(){
   if(dragFrom === null) return;
   dragFrom = null;
-  rail.style.transition = "";
-  rail.style.transform = "";
-  const open = document.body.classList.contains("sheet-open");
-  if(dragDy < -44){ setSheet(true); swallowClick = true; }
-  else if(dragDy > 44){
-    if(open) setSheet(false);
-    else document.body.classList.add("ui-off");
-    swallowClick = true;
-  }
+  if(Math.abs(dragDy) < 30) return;
+  setMin(dragDy > 0);
+  swallowClick = true;
 }
-grab.addEventListener("pointerup", endDrag);
-grab.addEventListener("pointercancel", endDrag);
-grab.addEventListener("click", ()=>{
+grabEl.addEventListener("pointerup", endDrag);
+grabEl.addEventListener("pointercancel", endDrag);
+grabEl.addEventListener("click", ()=>{
   if(swallowClick){ swallowClick = false; return; }
-  toggleSheet();
+  setMin(!document.body.classList.contains("sheet-min"));
 });
-actTune.addEventListener("click", toggleSheet);
-document.getElementById("actShuffle").addEventListener("click", ()=>{ stopAttract(); shuffle(); });
-document.getElementById("actSave").addEventListener("click", exportStill);
-document.getElementById("actShare").addEventListener("click", sharePlate);
 
-function syncFit(){ fitBtn.textContent = P.fill ? "Fill" : "Fit"; fitBtn.classList.toggle("on", !!P.fill); }
-fitBtn.addEventListener("click", ()=>{ P.fill = !P.fill; syncFit(); render(); });
-binders.push(syncFit);
-document.getElementById("hideBtn").addEventListener("click", ()=>{
-  document.body.classList.add("ui-off");
-  msg("tap the plate to bring the controls back");
-});
+document.getElementById("mShuffle").addEventListener("click", ()=>{ stopAttract(); shuffle(); });
+document.getElementById("mSave").addEventListener("click", exportStill);
+document.getElementById("mShare").addEventListener("click", sharePlate);
+
+/* Tapping the plate hides everything over it; the plate takes the whole screen. */
+function setBare(bare){
+  document.body.classList.toggle("ui-off", bare);
+  measureSheet();
+  render();
+  if(bare) msg("tap the wallpaper to bring the controls back");
+}
+
+/* The sheet's height is the plate's floor — hand it to the layout. */
+function measureSheet(){
+  const gone = !MOBILE.matches || document.body.classList.contains("ui-off");
+  document.documentElement.style.setProperty("--sheet-h", gone ? "0px" : rail.offsetHeight+"px");
+}
 
 /* A link that carries the whole look, so a plate can be sent to someone. */
 const SHARE_KEYS = LOOK.concat(["c0","c1","c2","mid","chroma","W","H","seed"]);
@@ -2105,12 +2305,14 @@ if(draw){
   new ResizeObserver(()=>{ clearTimeout(rt); rt = setTimeout(render, 80); }).observe(plate);
   window.addEventListener("resize", ()=>{ clearTimeout(rt); rt = setTimeout(render, 80); });
 
-  if(MOBILE.matches) P.fill = true;            // edge to edge is the point on a phone
   const link = /[#&]p=([A-Za-z0-9_\-]+)/.exec(location.hash);
   const fromLink = link && decodeState(link[1]);
   if(fromLink){ activeRecipe = -1; flashCaption("Shared look"); }
 
-  setSheet(false);
+  setMin(false);
+  measureSheet();
+  new ResizeObserver(measureSheet).observe(rail);
+  MOBILE.addEventListener("change", ()=>{ closeOpt(); measureSheet(); render(); });
   syncAll();
   render();
   refreshThumbs();

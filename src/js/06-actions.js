@@ -33,7 +33,7 @@ function syncRecipes(){
   });
   const name = activeRecipe >= 0 ? RECIPES[activeRecipe].name : SHAPES[P.shape].name+" · shuffled";
   document.getElementById("nowName").innerHTML = "<i>plate</i> <b>"+name+"</b>";
-  const tile = peekPlates.querySelector('[aria-pressed="true"]');
+  const tile = peekPlates.hidden ? null : peekPlates.querySelector('[aria-pressed="true"]');
   if(tile && tile.scrollIntoView) tile.scrollIntoView({block:"nearest", inline:"center", behavior:"smooth"});
 }
 binders.push(syncRecipes);
@@ -141,11 +141,11 @@ function toggleImmersive(){
 immerseBtn.addEventListener("click", toggleImmersive);
 document.addEventListener("fullscreenchange", ()=>{ if(!fsEl()) exitImmersive(); else render(); });
 
-/* a tap on the plate opens it full-bleed on touch devices, and hides the HUD once there */
+/* a tap on the plate clears the interface off it, and brings it back */
 canvas.addEventListener("click", ()=>{
   stopAttract();
-  if(document.body.classList.contains("immersive")) document.body.classList.toggle("hud-off");
-  else if(MOBILE.matches) document.body.classList.toggle("ui-off");
+  if(document.body.classList.contains("immersive")){ document.body.classList.toggle("hud-off"); return; }
+  if(MOBILE.matches) setBare(!document.body.classList.contains("ui-off"));
 });
 
 function syncHud(){
@@ -327,6 +327,7 @@ const VIDEO = pickVideo();
 if(!VIDEO && !canEncodeVideo()){
   recBtn.disabled = true;
   recBtn.title = "This browser can't encode video";
+  recNote.hidden = false;
   recNote.textContent = "Recording needs WebCodecs or MediaRecorder — Chrome, Edge, or a current Firefox or Safari.";
 }
 
@@ -423,67 +424,49 @@ recBtn.addEventListener("click", async ()=>{
 });
 
 /* ============================== sheet + link ============================== */
-const grab = document.getElementById("grab");
-const actTune = document.getElementById("actTune");
-const fitBtn = document.getElementById("fitBtn");
-
-function setSheet(open){
-  document.body.classList.toggle("sheet-open", open);
-  grab.setAttribute("aria-expanded", open ? "true" : "false");
-  actTune.querySelector("span").textContent = open ? "▾" : "≡";
-  actTune.lastChild.nodeValue = open ? "Close" : "Tune";
-}
-function toggleSheet(){ setSheet(!document.body.classList.contains("sheet-open")); }
-
-/* Drag the handle: up opens the controls, down collapses them, and down again
-   from the peek state clears the interface off the plate. */
+/* Drag the handle down to clear the controls off the screen, up to bring them
+   back; a plain tap does the same thing. */
 let dragFrom = null, dragDy = 0, swallowClick = false;
-grab.addEventListener("pointerdown", e=>{
+grabEl.addEventListener("pointerdown", e=>{
   if(!MOBILE.matches) return;
   dragFrom = e.clientY; dragDy = 0;
-  rail.style.transition = "none";
-  if(grab.setPointerCapture) grab.setPointerCapture(e.pointerId);
+  if(grabEl.setPointerCapture) grabEl.setPointerCapture(e.pointerId);
 });
-grab.addEventListener("pointermove", e=>{
+grabEl.addEventListener("pointermove", e=>{
   if(dragFrom === null) return;
   dragDy = e.clientY - dragFrom;
-  const open = document.body.classList.contains("sheet-open");
-  let t = dragDy;
-  if(open && t < 0) t = t / 5;                    // already as far up as it goes
-  if(!open && t < 0) t = Math.max(t, -170);       // peeking at the panel above
-  rail.style.transform = "translateY(" + t + "px)";
 });
 function endDrag(){
   if(dragFrom === null) return;
   dragFrom = null;
-  rail.style.transition = "";
-  rail.style.transform = "";
-  const open = document.body.classList.contains("sheet-open");
-  if(dragDy < -44){ setSheet(true); swallowClick = true; }
-  else if(dragDy > 44){
-    if(open) setSheet(false);
-    else document.body.classList.add("ui-off");
-    swallowClick = true;
-  }
+  if(Math.abs(dragDy) < 30) return;
+  setMin(dragDy > 0);
+  swallowClick = true;
 }
-grab.addEventListener("pointerup", endDrag);
-grab.addEventListener("pointercancel", endDrag);
-grab.addEventListener("click", ()=>{
+grabEl.addEventListener("pointerup", endDrag);
+grabEl.addEventListener("pointercancel", endDrag);
+grabEl.addEventListener("click", ()=>{
   if(swallowClick){ swallowClick = false; return; }
-  toggleSheet();
+  setMin(!document.body.classList.contains("sheet-min"));
 });
-actTune.addEventListener("click", toggleSheet);
-document.getElementById("actShuffle").addEventListener("click", ()=>{ stopAttract(); shuffle(); });
-document.getElementById("actSave").addEventListener("click", exportStill);
-document.getElementById("actShare").addEventListener("click", sharePlate);
 
-function syncFit(){ fitBtn.textContent = P.fill ? "Fill" : "Fit"; fitBtn.classList.toggle("on", !!P.fill); }
-fitBtn.addEventListener("click", ()=>{ P.fill = !P.fill; syncFit(); render(); });
-binders.push(syncFit);
-document.getElementById("hideBtn").addEventListener("click", ()=>{
-  document.body.classList.add("ui-off");
-  msg("tap the plate to bring the controls back");
-});
+document.getElementById("mShuffle").addEventListener("click", ()=>{ stopAttract(); shuffle(); });
+document.getElementById("mSave").addEventListener("click", exportStill);
+document.getElementById("mShare").addEventListener("click", sharePlate);
+
+/* Tapping the plate hides everything over it; the plate takes the whole screen. */
+function setBare(bare){
+  document.body.classList.toggle("ui-off", bare);
+  measureSheet();
+  render();
+  if(bare) msg("tap the wallpaper to bring the controls back");
+}
+
+/* The sheet's height is the plate's floor — hand it to the layout. */
+function measureSheet(){
+  const gone = !MOBILE.matches || document.body.classList.contains("ui-off");
+  document.documentElement.style.setProperty("--sheet-h", gone ? "0px" : rail.offsetHeight+"px");
+}
 
 /* A link that carries the whole look, so a plate can be sent to someone. */
 const SHARE_KEYS = LOOK.concat(["c0","c1","c2","mid","chroma","W","H","seed"]);
@@ -550,12 +533,14 @@ if(draw){
   new ResizeObserver(()=>{ clearTimeout(rt); rt = setTimeout(render, 80); }).observe(plate);
   window.addEventListener("resize", ()=>{ clearTimeout(rt); rt = setTimeout(render, 80); });
 
-  if(MOBILE.matches) P.fill = true;            // edge to edge is the point on a phone
   const link = /[#&]p=([A-Za-z0-9_\-]+)/.exec(location.hash);
   const fromLink = link && decodeState(link[1]);
   if(fromLink){ activeRecipe = -1; flashCaption("Shared look"); }
 
-  setSheet(false);
+  setMin(false);
+  measureSheet();
+  new ResizeObserver(measureSheet).observe(rail);
+  MOBILE.addEventListener("change", ()=>{ closeOpt(); measureSheet(); render(); });
   syncAll();
   render();
   refreshThumbs();

@@ -28,7 +28,7 @@ The pipeline, in order:
 | **Optics** | A 10-tap kernel blurs the field in scene units, stretchable along an axis for directional motion blur. Because it is applied to the field and not to pixels, blur is resolution-independent. |
 | **Motion** | The field walks a closed path in noise space and band phase advances exactly 2π per loop, so an animation returns to frame one exactly — loops are seamless by construction, not by crossfade. |
 | **Tone** | Exposure, black point, gamma, contrast pivot, gloss (a specular contour sharpener), vignette. |
-| **Palette** | Luminance maps through a three-stop gradient — shadow, mid, light — with a movable mid stop and an invert. Thirteen presets from Silver and Ash to Cyanotype, Rosé, and Neon, or set the three stops by hand. |
+| **Color** | Luminance maps through a three-stop gradient — shadow, mid, light — with a movable mid stop and an invert. Thirteen presets from Silver and Ash to Cyanotype, Rosé, and Neon, or set the three stops by hand. |
 | **Grain** | Cell noise sized in *output* pixels, with density (what fraction of cells carry a speck) and midtone bias (film weights grain toward mid values; dial it down for grain that reaches into the shadows). Optional chroma grain. |
 | **Surface** | An optional overlay: diagonal dashes, brushed streaks, weave, or a luminance-sized halftone dot screen applied after tone mapping. |
 
@@ -58,19 +58,25 @@ sizes, and a 4:5 print ratio; any custom size works too.
 
 ## On a phone
 
-The plate *is* the page: it fills the screen edge to edge, and everything else
-floats over it and can be dismissed. Tapping the plate hides the entire
-interface for a clean look at the wallpaper; tapping again brings it back.
+The plate is the page. It sits whole above a bottom sheet — never cropped, so
+what you see is what lands on the lock screen — and the sheet keeps one height
+whichever control you are in, so the picture never jumps as you move around.
 
-The sheet handle drags: pull up for the full controls, down to collapse them,
-down again to clear the interface off the plate. A bottom sheet peeks with a
-scrollable strip of plate thumbnails — each one
-rendered live in your current palette, so you are picking from pictures rather
-than from fourteen identical words — over four actions: **Shuffle**, **Save**,
-**Share**, and **Tune**, which slides the full tabbed controls up over the
-image. **Share** hands the rendered PNG to the OS share sheet, which on iOS is
-the shortest path into Photos. **Fill** crops the plate to the screen the way a
-wallpaper actually sits; **Fit** shows the whole frame.
+A row of category tiles never leaves the bottom: **Recipes**, Form, Optics,
+Motion, Tone, Color, Grain, Surface, Output. Recipes opens onto a horizontally
+scrolling strip of plate thumbnails, each rendered live in your current palette,
+so you are picking from pictures rather than from fourteen identical words. Every
+other tile lists its options collapsed, label and current value; tapping one
+swaps the list for that single control and a **Back** button. Nothing is more
+than two taps deep.
+
+**Shuffle**, **Save**, and **Share** sit as icons in the top right. Share hands
+the rendered PNG to the OS share sheet, which on iOS is the shortest path into
+Photos.
+
+Tapping the wallpaper hides the entire interface for a clean look at it, and
+tapping again brings it back. The sheet handle collapses the panel to just the
+tile row when you want more picture without losing the controls.
 
 On arrival the page walks the plates in order — the same order as the strip,
 so the row reads as a filmstrip — naming each one until you touch it, so the

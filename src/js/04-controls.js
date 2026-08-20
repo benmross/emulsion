@@ -13,7 +13,7 @@ const ICONS = {
   Optics:  SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8 11.6 8M8 14.2 4.4 8M13.4 5.5 6.2 6.4M2.6 10.5l7.2-.9M13 11.2 9.4 5M3 4.8l3.6 6.2"/>'),
   Motion:  SVG('<path d="M1.8 5.4c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/><path d="M1.8 10.6c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/>'),
   Tone:    SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4Z" fill="currentColor" stroke="none"/>'),
-  Palette: SVG('<path d="M8 1.8s4.3 4.9 4.3 7.6A4.3 4.3 0 0 1 8 13.9a4.3 4.3 0 0 1-4.3-4.5C3.7 6.7 8 1.8 8 1.8Z"/>'),
+  Color:   SVG('<path d="M8 1.8s4.3 4.9 4.3 7.6A4.3 4.3 0 0 1 8 13.9a4.3 4.3 0 0 1-4.3-4.5C3.7 6.7 8 1.8 8 1.8Z"/>'),
   Grain:   SVG('<circle cx="4" cy="4.2" r=".9"/><circle cx="11.4" cy="3.6" r=".9"/><circle cx="7.6" cy="7.4" r=".9"/><circle cx="3.4" cy="11" r=".9"/><circle cx="12" cy="10.6" r=".9"/><circle cx="8.2" cy="13" r=".9"/>'),
   Surface: SVG('<path d="M1.8 9.6 9.6 1.8M5.2 13.4 13.4 5.2M1.8 14.2 3.2 12.8M12.4 2.6l1.8-1.8"/>'),
   Output:  SVG('<path d="M8 1.9v7.4m0 0 2.8-2.8M8 9.3 5.2 6.5"/><path d="M2.4 11v2.2c0 .5.4.9.9.9h9.4c.5 0 .9-.4.9-.9V11"/>')
@@ -22,7 +22,7 @@ const CHEVRON = SVG('<path d="M4 6.2 8 10l4-3.8"/>');
 
 const SECTIONS = [];
 function section(title){
-  const s = el("section","sec",rail);
+  const s = el("section","sec",sheetBody);
   s.dataset.sec = title;
   SECTIONS.push(s);
   const h = el("h2",null,s);
@@ -37,7 +37,20 @@ function section(title){
     const collapsed = s.classList.toggle("collapsed");
     head.setAttribute("aria-expanded", collapsed ? "false" : "true");
   });
-  return el("div","stack",s);
+  const stack = el("div","stack",s);
+  stack.dataset.sec = title;
+  return stack;
+}
+
+/* Every control registers itself here. On a phone a group is first shown as a
+   list of these — label and current value — and only the one you tap unfolds. */
+const OPTS = [];
+function reg(host, label, node, read, tint){
+  OPTS.push({sec:host.dataset.sec, label, node, read, tint, act:null, row:null});
+  return OPTS[OPTS.length-1];
+}
+function action(host, label, run){
+  OPTS.push({sec:host.dataset.sec, label, node:null, read:null, tint:null, act:run, row:null});
 }
 function slider(host, key, label, min, max, step, fmt, onAfter){
   const row = el("div","row",host);
@@ -56,6 +69,7 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
     if(onAfter) onAfter();
   });
   binders.push(sync); sync();
+  reg(host, label, row, ()=>fmt(P[key]));
   return row;
 }
 function toggle(host, key, label, onAfter){
@@ -66,8 +80,9 @@ function toggle(host, key, label, onAfter){
   const sync = ()=> b.setAttribute("aria-pressed", P[key] ? "true":"false");
   b.addEventListener("click", ()=>{ P[key] = !P[key]; sync(); schedule(); if(onAfter) onAfter(); });
   binders.push(sync); sync();
+  reg(host, label, row, ()=> P[key] ? "On" : "Off");
 }
-function segmented(host, key, options, onAfter){
+function segmented(host, key, label, options, onAfter){
   const seg = el("div","seg",host);
   seg.setAttribute("role","group");
   const btns = options.map((o,i)=>{
@@ -78,6 +93,7 @@ function segmented(host, key, options, onAfter){
   });
   const sync = ()=> btns.forEach((b,i)=> b.setAttribute("aria-pressed", P[key]===i ? "true":"false"));
   binders.push(sync); sync();
+  reg(host, label, seg, ()=> options[P[key]]);
 }
 
 /* ============================== rail ============================== */
@@ -100,6 +116,7 @@ function syncShapes(){
   shapes.querySelectorAll("button").forEach((b,i)=> b.setAttribute("aria-pressed", P.shape===i?"true":"false"));
 }
 binders.push(syncShapes); syncShapes();
+reg(gForm, "Shape", shapes, ()=> SHAPES[P.shape].name);
 
 const pct = v => Math.round(v*100)+"%";
 slider(gForm,"scale","Scale",0.25,4,0.01, v=>v.toFixed(2)+"×", refreshThumbs);
@@ -127,11 +144,14 @@ const fpsSel = el("select","sel",fpsField);
 [24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
 fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
 binders.push(()=>{ fpsSel.value = P.fps; });
+reg(gMotion, "Frame rate", fpsField, ()=> P.fps+" fps");
 
 const recBtn = el("button","btn wide",gMotion);
 recBtn.type="button"; recBtn.textContent="Record loop";
+action(gMotion, "Record loop", ()=> recBtn.click());
+/* only ever carries the "this browser can't encode video" line */
 const recNote = el("p","hint",gMotion);
-recNote.textContent = "Frames are rendered one at a time and stamped with exact times, so a heavy plate takes longer to record but never drops a frame. The loop is seamless: the field travels a closed path back to frame one.";
+recNote.hidden = true;
 
 const gTone = section("Tone");
 slider(gTone,"exposure","Exposure",-2,2,0.01, v=>(v>0?"+":"")+v.toFixed(2)+" EV", refreshThumbs);
@@ -141,7 +161,7 @@ slider(gTone,"gamma","Gamma",0.4,2.4,0.01, v=>v.toFixed(2), refreshThumbs);
 slider(gTone,"gloss","Gloss",0,1,0.01, pct, refreshThumbs);
 slider(gTone,"vignette","Vignette",0,1,0.01, pct, refreshThumbs);
 
-const gColor = section("Palette");
+const gColor = section("Color");
 const pals = el("div","palettes",gColor);
 PALETTES.forEach(p=>{
   const b = el("button","pal",pals);
@@ -159,6 +179,16 @@ function syncPals(){
        && p.c[2].toLowerCase()===P.c2.toLowerCase()) ? "true":"false");
   });
 }
+const palName = ()=>{
+  const hit = PALETTES.find(p =>
+    p.c[0].toLowerCase()===P.c0.toLowerCase() &&
+    p.c[1].toLowerCase()===P.c1.toLowerCase() &&
+    p.c[2].toLowerCase()===P.c2.toLowerCase());
+  return hit ? hit.name : "Custom";
+};
+const rampCss = ()=> "linear-gradient(90deg,"+P.c0+","+P.c1+","+P.c2+")";
+reg(gColor, "Palette", pals, palName, rampCss);
+
 const ramp = el("div","ramp",gColor);
 [["c0","Shadow"],["c1","Mid"],["c2","Light"]].forEach(([key,tag])=>{
   const w = el("label","sw",ramp);
@@ -169,6 +199,7 @@ const ramp = el("div","ramp",gColor);
   binders.push(sync); sync();
 });
 binders.push(syncPals); syncPals();
+reg(gColor, "Color stops", ramp, null, rampCss);
 slider(gColor,"mid","Mid stop",0.1,0.9,0.005, pct, refreshThumbs);
 toggle(gColor,"invert","Invert tones", refreshThumbs);
 
@@ -180,12 +211,13 @@ slider(gGrain,"gresp","Midtone bias",0,1,0.01, pct, refreshThumbs);
 toggle(gGrain,"chroma","Color grain", refreshThumbs);
 
 const gTex = section("Surface");
-segmented(gTex,"tex",["None","Dash","Brush","Weave","Dots"], refreshThumbs);
+segmented(gTex,"tex","Texture",["None","Dash","Brush","Weave","Dots"], refreshThumbs);
 slider(gTex,"texamt","Depth",0,1,0.01, pct, refreshThumbs);
 slider(gTex,"texscale","Texture scale",0.2,3,0.01, v=>v.toFixed(2)+"×", refreshThumbs);
 
 const gOut = section("Output");
-const sel = el("select","sel",gOut);
+const sizeBox = el("div","group",gOut);
+const sel = el("select","sel",sizeBox);
 SIZES.forEach(group=>{
   const g = el("optgroup",null,sel);
   g.label = group.group;
@@ -201,7 +233,7 @@ sel.addEventListener("change", ()=>{
   const [w,h] = sel.value.split("x").map(Number);
   P.W=w; P.H=h; syncDims(); schedule(); refreshThumbs();
 });
-const dims = el("div","dims",gOut);
+const dims = el("div","dims",sizeBox);
 function dimField(key,label){
   const f = el("div","field",dims);
   el("span",null,f).textContent = label;
@@ -225,6 +257,7 @@ function syncDims(){
   updateStatus();
 }
 binders.push(syncDims);
+reg(gOut, "Size", sizeBox, ()=> P.W+" × "+P.H);
 
 const seedRow = el("div","seedrow",gOut);
 const seedField = el("div","field",seedRow);
@@ -240,6 +273,7 @@ binders.push(syncSeed); syncSeed();
 const newSeed = el("button","btn",seedRow);
 newSeed.type="button"; newSeed.textContent="New seed";
 newSeed.addEventListener("click", ()=>{ P.seed = Math.round(Math.random()*9999)/10000; syncSeed(); schedule(); refreshThumbs(); });
+reg(gOut, "Seed", seedRow, ()=> String(Math.round(P.seed*10000)));
 
 toggle(gOut,"guides","Lock screen guides", ()=> frame.classList.toggle("guided", P.guides));
 binders.push(()=> frame.classList.toggle("guided", !!P.guides));
@@ -253,6 +287,7 @@ const fmtSel = el("select","sel",fmtField);
 fmtSel.value = P.fmt;
 fmtSel.addEventListener("change", ()=>{ P.fmt = fmtSel.value; });
 binders.push(()=>{ fmtSel.value = P.fmt; });
+reg(gOut, "File format", fmtField, ()=> P.fmt.toUpperCase());
 
 const setRow = el("div","pair",gOut);
 const setField = el("div","field",setRow);
@@ -264,26 +299,103 @@ setSel.addEventListener("change", ()=>{ P.setsize = parseInt(setSel.value,10); }
 binders.push(()=>{ setSel.value = P.setsize; });
 const setBtn = el("button","btn",setRow);
 setBtn.type="button"; setBtn.textContent="Export set";
+reg(gOut, "Export set", setRow, ()=> P.setsize+" stills");
 
 const linkBtn = el("button","btn wide",gOut);
 linkBtn.type="button"; linkBtn.textContent="Copy link to this look";
+action(gOut, "Copy link to this look", ()=> linkBtn.click());
 
-const hint = el("p","hint",gOut.parentElement);
-hint.innerHTML = 'Grain is measured in <em>output</em> pixels — the preview scales it to match, so a 1&nbsp;px grain stays 1&nbsp;px in the export. <b>Export set</b> writes a batch of seeds for an iPhone Photo&nbsp;Shuffle album; <b>Record loop</b> writes a video for a Live&nbsp;Photo lock screen. Press <kbd>R</kbd> to reshuffle.';
+/* ---------- one group at a time on small screens ----------
+   The tab bar is permanent; above it sits either the group's contents (the
+   plate strip for Recipes, a list of options for everything else) or, once an
+   option is tapped, that one control on its own with a way back. */
+const tabsEl  = document.getElementById("tabs");
+const optList = document.getElementById("optlist");
+const strip   = document.getElementById("peekplates");
+const ptitle  = document.getElementById("ptitle");
 
-/* ---------- one group at a time on small screens ---------- */
-const tabsEl = document.getElementById("tabs");
 SECTIONS.forEach((sec,i)=>{
   const b = el("button","tab",tabsEl);
-  b.type="button"; b.textContent = sec.dataset.sec;
+  b.type="button";
   b.setAttribute("role","tab");
+  b.innerHTML = '<span class="tico">'+(ICONS[sec.dataset.sec]||"")+'</span>'
+              + '<span class="tlbl">'+sec.dataset.sec+'</span>';
   b.addEventListener("click", ()=> setTab(i));
 });
+
+/* The handle trades the panel for more picture; the tab bar always stays. */
+const grabEl = document.getElementById("grab");
+function setMin(min){
+  document.body.classList.toggle("sheet-min", min);
+  grabEl.setAttribute("aria-expanded", min ? "false" : "true");
+  grabEl.setAttribute("aria-label", min ? "Show the controls" : "Collapse the controls");
+}
+
+let openOptId = -1;
+function buildList(name){
+  optList.textContent = "";
+  OPTS.forEach((o,i)=>{
+    o.row = null;
+    if(o.sec !== name) return;
+    const b = el("button", o.act ? "optrow go" : "optrow", optList);
+    b.type = "button";
+    el("span","olbl",b).textContent = o.label;
+    if(!o.act){
+      if(o.tint) el("i","otint",b);
+      el("span","oval",b);
+      el("span","ochev",b).innerHTML = CHEVRON;
+    }
+    b.addEventListener("click", ()=> o.act ? o.act() : openOpt(i));
+    o.row = b;
+  });
+  syncList();
+}
+function syncList(){
+  OPTS.forEach(o=>{
+    if(!o.row) return;
+    const v = o.row.querySelector(".oval");
+    if(v && o.read) v.textContent = o.read();
+    const t = o.row.querySelector(".otint");
+    if(t && o.tint) t.style.background = o.tint();
+  });
+}
+binders.push(syncList);
+
+/* Opening an option hides its siblings, so the section shows just that one. */
+function openOpt(i){
+  const o = OPTS[i];
+  if(!o || !o.node) return;
+  openOptId = i;
+  Array.prototype.forEach.call(o.node.parentElement.children, c=>{
+    c.style.display = c === o.node ? "" : "none";
+  });
+  ptitle.textContent = o.label;
+  document.body.dataset.view = "detail";
+  rail.scrollTop = 0;
+}
+function closeOpt(){
+  const o = OPTS[openOptId];
+  if(o && o.node){
+    Array.prototype.forEach.call(o.node.parentElement.children, c=>{ c.style.display = ""; });
+  }
+  openOptId = -1;
+  document.body.dataset.view = "list";
+  syncList();
+}
+document.getElementById("pback").addEventListener("click", closeOpt);
+
 function setTab(i){
+  setMin(false);            // a tapped category always shows its contents
+  closeOpt();
   SECTIONS.forEach((s,n)=> s.classList.toggle("on", n===i));
   tabsEl.querySelectorAll(".tab").forEach((b,n)=> b.setAttribute("aria-selected", n===i ? "true":"false"));
+  const name = SECTIONS[i].dataset.sec;
+  const isRecipes = name === "Recipes";
+  strip.hidden = !isRecipes;
+  optList.hidden = isRecipes;
+  buildList(name);
   const active = tabsEl.querySelector('.tab[aria-selected="true"]');
-  if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"nearest"});
+  if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"center"});
   rail.scrollTop = 0;
 }
 setTab(0);
