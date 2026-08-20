@@ -338,7 +338,7 @@ body.captioning .caption b{animation:capfade .4s ease}
 }
 .grab:hover::before{background:#4E525A}
 .peekplates{
-  display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;
+  display:none;gap:7px;overflow-x:auto;scrollbar-width:none;
   padding:2px 12px 10px;scroll-snap-type:x proximity;
 }
 .peekplates::-webkit-scrollbar{display:none}
@@ -354,31 +354,10 @@ body.captioning .caption b{animation:capfade .4s ease}
   color:#DEDCD7;background:linear-gradient(transparent,rgba(0,0,0,.85) 60%);
 }
 
-/* the tab's own view: a strip of plates, or its options as one compact list */
-.panel,.pnav{display:none}
-.optlist{display:flex;flex-direction:column;gap:6px;padding:2px 12px 10px}
-.optrow{
-  display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:0 13px;
-  border:1px solid var(--line);background:#0C0D0F;border-radius:11px;
-  color:var(--text);font-size:14px;text-align:left;cursor:pointer;
-}
-.optrow .olbl{flex:1 1 auto;min-width:0}
-.optrow .oval{
-  font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--mute);
-  font-variant-numeric:tabular-nums;white-space:nowrap;
-}
-.optrow .otint{width:28px;height:13px;border-radius:3px;flex:0 0 auto}
-.optrow .ochev{display:flex;flex:0 0 auto;color:var(--dim);transform:rotate(-90deg)}
-.optrow.go{background:var(--gold-soft);border-color:var(--gold-line);color:var(--gold-txt)}
-.pback{
-  display:flex;align-items:center;gap:6px;flex:0 0 auto;min-height:36px;padding:0 12px;
-  border:1px solid var(--line);background:#0C0D0F;border-radius:999px;
-  color:var(--text);font-size:13px;cursor:pointer;
-}
-.ptitle{
-  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.18em;
-  text-transform:uppercase;color:var(--mute);overflow:hidden;white-space:nowrap;
-}
+/* A label for controls that have none of their own — a phone shows it, the
+   rail does not, and display:contents keeps the wrapper out of the layout. */
+.orow{display:contents}
+.oplbl{display:none}
 .group{display:flex;flex-direction:column;gap:13px}
 
 /* shape picker */
@@ -450,7 +429,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
 @media (max-width:980px){
   /* The plate sits whole in the space above the sheet; the sheet is a panel
      over a permanent tab bar, and the top bar floats over the picture. */
-  :root{--panel-h:clamp(150px,24dvh,200px)}
+  :root{--panel-h:clamp(172px,28dvh,242px)}
   .app{display:block;height:100dvh;overflow:hidden}
   .stage{position:fixed;inset:0;background:#000}
   .plate{
@@ -506,18 +485,33 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   .grab{display:block}
 
   .sheetbody{display:flex;flex-direction:column;flex:0 0 auto;height:var(--panel-h);overflow:hidden}
-  .panel{display:block;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
-  body[data-view="detail"] .panel{display:none}
-  body[data-view="detail"] .pnav{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:0 12px 9px}
 
-  /* one section at a time, and only once an option is opened */
+  /* one group at a time, its controls live and in reach */
   .sec{
-    display:none;border-bottom:0;padding:2px 14px 14px;
+    display:none;border-bottom:0;padding:5px 14px 16px;
     flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
   }
-  body[data-view="detail"] .sec.on{display:block}
+  .sec.on{display:block}
+  .sec[data-sec="Recipes"]{display:none}     /* the strip stands in for it */
   .sec > h2{display:none}
-  .stack{gap:19px}
+  .stack{gap:15px}
+
+  /* label on the left, the control on the right */
+  .oplbl{
+    display:block;margin-bottom:8px;
+    font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim);
+  }
+  .row{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);
+    align-items:center;gap:12px;
+  }
+  .row .top{flex-direction:column;align-items:flex-start;gap:0}
+  .row label{font-size:13.5px;line-height:1.25}
+  .row .val{font-size:11px;color:var(--mute)}
+  .toggle{min-height:40px}
+  .stack > .field{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px}
+  .stack > .field > span{margin:0}
 
   /* the tab bar never leaves */
   .tabs{
@@ -537,9 +531,16 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   body.sheet-min .sheetbody{display:none!important}
   body.sheet-min .grab::before{background:#4E525A}
 
-  .peekplates{height:100%;padding:0 12px 10px}
+  .peekplates{display:flex;flex:1 1 auto;min-height:0;padding:0 12px 10px}
   .peekplates button{width:auto;height:100%;max-height:132px}
-  .plates{grid-template-columns:repeat(4,1fr)}
+
+  /* pickers that would eat the whole panel as a grid run sideways instead */
+  .shapes{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .shapes::-webkit-scrollbar{display:none}
+  .shapes button{flex:0 0 auto;width:64px}
+  .palettes{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .palettes::-webkit-scrollbar{display:none}
+  .pal{flex:0 0 auto}
 
   /* touch targets */
   .btn{padding:11px 13px;min-height:44px}
@@ -654,21 +655,10 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   <aside class="rail" id="rail">
     <button class="grab" id="grab" aria-label="Collapse the panel" aria-expanded="true"></button>
 
-    <!-- one fixed-height body: the group's contents, or one open option -->
+    <!-- one fixed-height body, whichever group is showing -->
     <div class="sheetbody" id="sheetbody">
-    <div class="pnav" id="pnav">
-      <button class="pback" id="pback" type="button">
-        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 3.2 5 8l4.8 4.8"/></svg>
-        Back
-      </button>
-      <span class="ptitle" id="ptitle"></span>
-    </div>
-
-    <!-- the selected tab's contents: the recipe strip, or its list of options -->
-    <div class="panel" id="panel">
+      <!-- Recipes shows this; every other tab shows its own section -->
       <div class="peekplates" id="peekplates"></div>
-      <div class="optlist" id="optlist"></div>
-    </div>
 
       <!-- control sections are appended here -->
     </div>
@@ -695,14 +685,17 @@ const P = Object.assign({}, DEFAULTS);
 
 /* A plate is a look, not a working setup. Picking one moves exactly these keys —
    anything a plate does not name resets to its default — and leaves the rest of
-   your session alone: palette, mid stop, colour grain, output size, seed, file
-   format, and the motion transport all stay where you put them. */
+   your session alone: mid stop, colour grain, output size, seed, file format,
+   and the motion transport all stay where you put them. Each plate carries its
+   own three-stop ramp, so the colour is part of the look and not a mode you are
+   left in. */
 const LOOK = [
   "shape","scale","angle","soft","warp","detail","mottle","posx","posy",
   "bands","blur","streak","streakang",
   "exposure","contrast","black","gamma","vignette","gloss",
   "grain","gsize","gdens","gresp",
-  "tex","texamt","texscale","invert"
+  "tex","texamt","texscale","invert",
+  "c0","c1","c2"
 ];
 
 const SHAPES = [
@@ -719,6 +712,7 @@ const SHAPES = [
 const PALETTES = [
   {name:"Silver",    c:["#000000","#6E7076","#F2F2F0"]},
   {name:"Platinum",  c:["#04060A","#5C6B78","#EAF2F6"]},
+  {name:"Steel",     c:["#03080E","#4E6E8C","#CFE2F2"]},
   {name:"Sepia",     c:["#0A0705","#6A4B32","#F4E3C8"]},
   {name:"Safelight", c:["#060302","#5A2E06","#FFCF87"]},
   {name:"Cyanotype", c:["#01060E","#1E5C87","#D9EEF7"]},
@@ -729,59 +723,74 @@ const PALETTES = [
   {name:"Selenium",  c:["#05060B","#5B5A72","#EFE9F2"]},
   {name:"Ultramarine",c:["#04051A","#3B44A8","#DCDEFF"]},
   {name:"Rosé",      c:["#0A0507","#7A4552","#FFE0D2"]},
-  {name:"Neon",      c:["#05010A","#A0219C","#7FF6FF"]}
+  {name:"Neon",      c:["#05010A","#A0219C","#7FF6FF"]},
+  {name:"Ink",       c:["#0C1020","#33406B","#FCF8EE"]}
 ];
 
 const RECIPES = [
   {name:"Limb",   p:{shape:0,scale:1.00,angle:0,soft:.3,warp:.45,detail:3.4,mottle:.35,posx:-.05,posy:0,
                      exposure:.05,contrast:1.35,black:.05,gamma:1,vignette:.35,
-                     grain:.16,gsize:1.3,gdens:.9,gresp:.75,tex:0,invert:false}},
+                     grain:.16,gsize:1.3,gdens:.9,gresp:.75,tex:0,invert:false,
+                     /* Silver */ c0:"#000000",c1:"#6E7076",c2:"#F2F2F0"}},
   {name:"Shaft",  p:{shape:1,scale:1.15,angle:-38,soft:.5,warp:.3,detail:3,mottle:.5,posx:-.05,posy:0,
                      exposure:0,contrast:1.35,black:.06,gamma:1.1,vignette:.2,
-                     grain:.2,gsize:1.1,gdens:.95,gresp:.6,tex:1,texamt:.35,texscale:1.1,invert:false}},
+                     grain:.2,gsize:1.1,gdens:.95,gresp:.6,tex:1,texamt:.35,texscale:1.1,invert:false,
+                     /* Safelight */ c0:"#060302",c1:"#5A2E06",c2:"#FFCF87"}},
   {name:"Satin",  p:{shape:2,scale:1.10,angle:-22,soft:.4,warp:.75,detail:3.6,mottle:.2,posx:0,posy:0,
                      exposure:0,contrast:1.2,black:.04,gamma:1,vignette:.15,
-                     grain:.28,gsize:1,gdens:1,gresp:.85,tex:0,invert:false}},
+                     grain:.28,gsize:1,gdens:1,gresp:.85,tex:0,invert:false,
+                     /* Rosé */ c0:"#0A0507",c1:"#7A4552",c2:"#FFE0D2"}},
   {name:"Dune",   p:{shape:3,scale:1.20,angle:-12,soft:.4,warp:.55,detail:4.2,mottle:.3,posx:0,posy:0,
                      exposure:-.1,contrast:1.45,black:.08,gamma:1.1,vignette:.4,
-                     grain:.22,gsize:1.2,gdens:.9,gresp:.8,tex:2,texamt:.25,texscale:1,invert:false}},
+                     grain:.22,gsize:1.2,gdens:.9,gresp:.8,tex:2,texamt:.25,texscale:1,invert:false,
+                     /* Sepia */ c0:"#0A0705",c1:"#6A4B32",c2:"#F4E3C8"}},
   {name:"Plume",  p:{shape:4,scale:1.05,angle:0,soft:.4,warp:.9,detail:4.5,mottle:.25,posx:0,posy:0,
                      exposure:.2,contrast:1.3,black:.1,gamma:1.2,vignette:.45,
-                     grain:.2,gsize:1.4,gdens:.85,gresp:.7,tex:0,invert:false}},
+                     grain:.2,gsize:1.4,gdens:.85,gresp:.7,tex:0,invert:false,
+                     /* Selenium */ c0:"#05060B",c1:"#5B5A72",c2:"#EFE9F2"}},
   {name:"Orb",    p:{shape:5,scale:1.00,angle:0,soft:.25,warp:.35,detail:3.2,mottle:.2,posx:0,posy:0,
                      exposure:.05,contrast:1.25,black:.03,gamma:1,vignette:.3,
-                     grain:.18,gsize:1.5,gdens:.9,gresp:.9,tex:0,invert:false}},
+                     grain:.18,gsize:1.5,gdens:.9,gresp:.9,tex:0,invert:false,
+                     /* Bone */ c0:"#07070A",c1:"#6B6455",c2:"#F2EADB"}},
   {name:"Chrome", p:{shape:6,scale:1.00,angle:0,soft:.4,warp:.85,detail:3.2,mottle:.15,posx:0,posy:0,
                      bands:3.0,blur:.06,streak:0,streakang:0,
                      exposure:0,contrast:1.45,black:.03,gamma:1,vignette:.15,gloss:.55,
-                     grain:.12,gsize:1,gdens:.85,gresp:.5,tex:0,invert:false}},
+                     grain:.12,gsize:1,gdens:.85,gresp:.5,tex:0,invert:false,
+                     /* Steel */ c0:"#03080E",c1:"#4E6E8C",c2:"#CFE2F2"}},
   {name:"Oil",    p:{shape:6,scale:1.35,angle:20,soft:.4,warp:1.2,detail:4,mottle:.2,posx:0,posy:0,
                      bands:5.0,blur:.13,streak:0,streakang:0,
                      exposure:0,contrast:1.15,black:.02,gamma:1,vignette:.2,gloss:.3,
-                     grain:.18,gsize:1.1,gdens:1,gresp:.7,tex:0,invert:false}},
+                     grain:.18,gsize:1.1,gdens:1,gresp:.7,tex:0,invert:false,
+                     /* Neon */ c0:"#05010A",c1:"#A0219C",c2:"#7FF6FF"}},
   {name:"Bloom",  p:{shape:7,scale:1.05,angle:0,soft:.4,warp:.55,detail:3.4,mottle:.25,posx:0,posy:0,
                      bands:2,blur:.24,streak:0,streakang:0,
                      exposure:-.3,contrast:1.2,black:.14,gamma:1.35,vignette:.55,gloss:0,
-                     grain:.17,gsize:1.2,gdens:1,gresp:.35,tex:0,invert:false}},
+                     grain:.17,gsize:1.2,gdens:1,gresp:.35,tex:0,invert:false,
+                     /* Ember */ c0:"#08040A",c1:"#7A2140",c2:"#FFD9A8"}},
   {name:"Sfumato",p:{shape:7,scale:1.10,angle:-12,soft:.5,warp:.6,detail:3,mottle:.3,posx:-.05,posy:.05,
                      bands:2,blur:.50,streak:.12,streakang:70,
                      exposure:-.18,contrast:1.15,black:.16,gamma:1.25,vignette:.55,gloss:0,
-                     grain:.17,gsize:1.2,gdens:1,gresp:.25,tex:0,invert:false}},
+                     grain:.17,gsize:1.2,gdens:1,gresp:.25,tex:0,invert:false,
+                     /* Ash */ c0:"#060606",c1:"#4A4A4A",c2:"#A8A8A8"}},
   {name:"Smear",  p:{shape:2,scale:1.2,angle:8,soft:.4,warp:.7,detail:3.6,mottle:.3,posx:0,posy:0,
                      bands:2,blur:.55,streak:.92,streakang:92,
                      exposure:-.15,contrast:1.35,black:.08,gamma:1.15,vignette:.35,gloss:0,
-                     grain:.24,gsize:1,gdens:1,gresp:.6,tex:0,invert:false}},
+                     grain:.24,gsize:1,gdens:1,gresp:.6,tex:0,invert:false,
+                     /* Cyanotype */ c0:"#01060E",c1:"#1E5C87",c2:"#D9EEF7"}},
   {name:"Halftone",p:{shape:6,scale:1.3,angle:-10,soft:.4,warp:.9,detail:3.4,mottle:.2,posx:0,posy:0,
                      bands:2.4,blur:.12,streak:0,streakang:0,
                      exposure:-.1,contrast:1.3,black:.07,gamma:1.1,vignette:.3,gloss:.2,
-                     grain:.1,gsize:1,gdens:.8,gresp:.6,tex:4,texamt:.75,texscale:1.15,invert:false}},
+                     grain:.1,gsize:1,gdens:.8,gresp:.6,tex:4,texamt:.75,texscale:1.15,invert:false,
+                     /* Ultramarine */ c0:"#04051A",c1:"#3B44A8",c2:"#DCDEFF"}},
   {name:"Haze",   p:{shape:7,scale:1.9,angle:24,soft:.5,warp:.35,detail:2.6,mottle:.2,posx:.1,posy:-.1,
                      bands:2,blur:.5,streak:.3,streakang:20,
                      exposure:-.55,contrast:.85,black:.02,gamma:1.45,vignette:.25,gloss:0,
-                     grain:.2,gsize:1.1,gdens:1,gresp:.3,tex:0,invert:false}},
+                     grain:.2,gsize:1.1,gdens:1,gresp:.3,tex:0,invert:false,
+                     /* Verdigris */ c0:"#030706",c1:"#3C6B5C",c2:"#E6F2E4"}},
   {name:"Negative",p:{shape:2,scale:1.05,angle:14,soft:.4,warp:.6,detail:3.4,mottle:.3,posx:0,posy:0,
                      exposure:0,contrast:1.15,black:.02,gamma:.95,vignette:.1,
-                     grain:.24,gsize:1,gdens:1,gresp:.5,tex:0,invert:true}}
+                     grain:.24,gsize:1,gdens:1,gresp:.5,tex:0,invert:true,
+                     /* Ink */ c0:"#0C1020",c1:"#33406B",c2:"#FCF8EE"}}
 ];
 
 const SIZES = [
@@ -1221,6 +1230,14 @@ const ICONS = {
 };
 const CHEVRON = SVG('<path d="M4 6.2 8 10l4-3.8"/>');
 
+/* A picker that scrolls sideways on a phone keeps its selection in sight;
+   on a desktop it does not overflow, so this is a no-op there. */
+function centerIn(host){
+  const on = host.querySelector('[aria-pressed="true"]');
+  if(on && on.scrollIntoView && host.scrollWidth > host.clientWidth + 4)
+    on.scrollIntoView({block:"nearest", inline:"center"});
+}
+
 const SECTIONS = [];
 function section(title){
   const s = el("section","sec",sheetBody);
@@ -1243,15 +1260,15 @@ function section(title){
   return stack;
 }
 
-/* Every control registers itself here. On a phone a group is first shown as a
-   list of these — label and current value — and only the one you tap unfolds. */
-const OPTS = [];
-function reg(host, label, node, read, tint){
-  OPTS.push({sec:host.dataset.sec, label, node, read, tint, act:null, row:null});
-  return OPTS[OPTS.length-1];
-}
-function action(host, label, run){
-  OPTS.push({sec:host.dataset.sec, label, node:null, read:null, tint:null, act:run, row:null});
+/* Controls that carry no label of their own get one, shown only on a phone —
+   in the rail the section heading and the control itself already say enough.
+   The wrapper is display:contents there, so the desktop layout is untouched. */
+function named(label, node){
+  const wrap = el("div","orow");
+  node.parentNode.insertBefore(wrap, node);
+  el("span","oplbl",wrap).textContent = label;
+  wrap.appendChild(node);
+  return node;
 }
 function slider(host, key, label, min, max, step, fmt, onAfter){
   const row = el("div","row",host);
@@ -1270,7 +1287,6 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
     if(onAfter) onAfter();
   });
   binders.push(sync); sync();
-  reg(host, label, row, ()=>fmt(P[key]));
   return row;
 }
 function toggle(host, key, label, onAfter){
@@ -1281,7 +1297,6 @@ function toggle(host, key, label, onAfter){
   const sync = ()=> b.setAttribute("aria-pressed", P[key] ? "true":"false");
   b.addEventListener("click", ()=>{ P[key] = !P[key]; sync(); schedule(); if(onAfter) onAfter(); });
   binders.push(sync); sync();
-  reg(host, label, row, ()=> P[key] ? "On" : "Off");
 }
 function segmented(host, key, label, options, onAfter){
   const seg = el("div","seg",host);
@@ -1294,7 +1309,7 @@ function segmented(host, key, label, options, onAfter){
   });
   const sync = ()=> btns.forEach((b,i)=> b.setAttribute("aria-pressed", P[key]===i ? "true":"false"));
   binders.push(sync); sync();
-  reg(host, label, seg, ()=> options[P[key]]);
+  named(label, seg);
 }
 
 /* ============================== rail ============================== */
@@ -1315,9 +1330,10 @@ SHAPES.forEach((s,i)=>{
 });
 function syncShapes(){
   shapes.querySelectorAll("button").forEach((b,i)=> b.setAttribute("aria-pressed", P.shape===i?"true":"false"));
+  centerIn(shapes);
 }
 binders.push(syncShapes); syncShapes();
-reg(gForm, "Shape", shapes, ()=> SHAPES[P.shape].name);
+named("Shape", shapes);
 
 const pct = v => Math.round(v*100)+"%";
 slider(gForm,"scale","Scale",0.25,4,0.01, v=>v.toFixed(2)+"×", refreshThumbs);
@@ -1345,11 +1361,9 @@ const fpsSel = el("select","sel",fpsField);
 [24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
 fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
 binders.push(()=>{ fpsSel.value = P.fps; });
-reg(gMotion, "Frame rate", fpsField, ()=> P.fps+" fps");
 
 const recBtn = el("button","btn wide",gMotion);
 recBtn.type="button"; recBtn.textContent="Record loop";
-action(gMotion, "Record loop", ()=> recBtn.click());
 /* only ever carries the "this browser can't encode video" line */
 const recNote = el("p","hint",gMotion);
 recNote.hidden = true;
@@ -1379,16 +1393,9 @@ function syncPals(){
       (p.c[0].toLowerCase()===P.c0.toLowerCase() && p.c[1].toLowerCase()===P.c1.toLowerCase()
        && p.c[2].toLowerCase()===P.c2.toLowerCase()) ? "true":"false");
   });
+  centerIn(pals);
 }
-const palName = ()=>{
-  const hit = PALETTES.find(p =>
-    p.c[0].toLowerCase()===P.c0.toLowerCase() &&
-    p.c[1].toLowerCase()===P.c1.toLowerCase() &&
-    p.c[2].toLowerCase()===P.c2.toLowerCase());
-  return hit ? hit.name : "Custom";
-};
-const rampCss = ()=> "linear-gradient(90deg,"+P.c0+","+P.c1+","+P.c2+")";
-reg(gColor, "Palette", pals, palName, rampCss);
+named("Palette", pals);
 
 const ramp = el("div","ramp",gColor);
 [["c0","Shadow"],["c1","Mid"],["c2","Light"]].forEach(([key,tag])=>{
@@ -1400,7 +1407,7 @@ const ramp = el("div","ramp",gColor);
   binders.push(sync); sync();
 });
 binders.push(syncPals); syncPals();
-reg(gColor, "Color stops", ramp, null, rampCss);
+named("Color stops", ramp);
 slider(gColor,"mid","Mid stop",0.1,0.9,0.005, pct, refreshThumbs);
 toggle(gColor,"invert","Invert tones", refreshThumbs);
 
@@ -1435,6 +1442,7 @@ sel.addEventListener("change", ()=>{
   P.W=w; P.H=h; syncDims(); schedule(); refreshThumbs();
 });
 const dims = el("div","dims",sizeBox);
+named("Size", sizeBox);
 function dimField(key,label){
   const f = el("div","field",dims);
   el("span",null,f).textContent = label;
@@ -1458,7 +1466,6 @@ function syncDims(){
   updateStatus();
 }
 binders.push(syncDims);
-reg(gOut, "Size", sizeBox, ()=> P.W+" × "+P.H);
 
 const seedRow = el("div","seedrow",gOut);
 const seedField = el("div","field",seedRow);
@@ -1474,7 +1481,6 @@ binders.push(syncSeed); syncSeed();
 const newSeed = el("button","btn",seedRow);
 newSeed.type="button"; newSeed.textContent="New seed";
 newSeed.addEventListener("click", ()=>{ P.seed = Math.round(Math.random()*9999)/10000; syncSeed(); schedule(); refreshThumbs(); });
-reg(gOut, "Seed", seedRow, ()=> String(Math.round(P.seed*10000)));
 
 toggle(gOut,"guides","Lock screen guides", ()=> frame.classList.toggle("guided", P.guides));
 binders.push(()=> frame.classList.toggle("guided", !!P.guides));
@@ -1488,7 +1494,6 @@ const fmtSel = el("select","sel",fmtField);
 fmtSel.value = P.fmt;
 fmtSel.addEventListener("change", ()=>{ P.fmt = fmtSel.value; });
 binders.push(()=>{ fmtSel.value = P.fmt; });
-reg(gOut, "File format", fmtField, ()=> P.fmt.toUpperCase());
 
 const setRow = el("div","pair",gOut);
 const setField = el("div","field",setRow);
@@ -1500,20 +1505,16 @@ setSel.addEventListener("change", ()=>{ P.setsize = parseInt(setSel.value,10); }
 binders.push(()=>{ setSel.value = P.setsize; });
 const setBtn = el("button","btn",setRow);
 setBtn.type="button"; setBtn.textContent="Export set";
-reg(gOut, "Export set", setRow, ()=> P.setsize+" stills");
 
 const linkBtn = el("button","btn wide",gOut);
 linkBtn.type="button"; linkBtn.textContent="Copy link to this look";
-action(gOut, "Copy link to this look", ()=> linkBtn.click());
 
 /* ---------- one group at a time on small screens ----------
-   The tab bar is permanent; above it sits either the group's contents (the
-   plate strip for Recipes, a list of options for everything else) or, once an
-   option is tapped, that one control on its own with a way back. */
-const tabsEl  = document.getElementById("tabs");
-const optList = document.getElementById("optlist");
-const strip   = document.getElementById("peekplates");
-const ptitle  = document.getElementById("ptitle");
+   The tab bar is permanent and the group's own controls sit right above it:
+   label on the left, the slider, switch or picker on the right. Recipes is the
+   one group that shows something else — the plate strip, scrolling sideways. */
+const tabsEl = document.getElementById("tabs");
+const strip  = document.getElementById("peekplates");
 
 SECTIONS.forEach((sec,i)=>{
   const b = el("button","tab",tabsEl);
@@ -1524,7 +1525,7 @@ SECTIONS.forEach((sec,i)=>{
   b.addEventListener("click", ()=> setTab(i));
 });
 
-/* The handle trades the panel for more picture; the tab bar always stays. */
+/* The handle trades the controls for more picture; the tab bar always stays. */
 const grabEl = document.getElementById("grab");
 function setMin(min){
   document.body.classList.toggle("sheet-min", min);
@@ -1532,69 +1533,11 @@ function setMin(min){
   grabEl.setAttribute("aria-label", min ? "Show the controls" : "Collapse the controls");
 }
 
-let openOptId = -1;
-function buildList(name){
-  optList.textContent = "";
-  OPTS.forEach((o,i)=>{
-    o.row = null;
-    if(o.sec !== name) return;
-    const b = el("button", o.act ? "optrow go" : "optrow", optList);
-    b.type = "button";
-    el("span","olbl",b).textContent = o.label;
-    if(!o.act){
-      if(o.tint) el("i","otint",b);
-      el("span","oval",b);
-      el("span","ochev",b).innerHTML = CHEVRON;
-    }
-    b.addEventListener("click", ()=> o.act ? o.act() : openOpt(i));
-    o.row = b;
-  });
-  syncList();
-}
-function syncList(){
-  OPTS.forEach(o=>{
-    if(!o.row) return;
-    const v = o.row.querySelector(".oval");
-    if(v && o.read) v.textContent = o.read();
-    const t = o.row.querySelector(".otint");
-    if(t && o.tint) t.style.background = o.tint();
-  });
-}
-binders.push(syncList);
-
-/* Opening an option hides its siblings, so the section shows just that one. */
-function openOpt(i){
-  const o = OPTS[i];
-  if(!o || !o.node) return;
-  openOptId = i;
-  Array.prototype.forEach.call(o.node.parentElement.children, c=>{
-    c.style.display = c === o.node ? "" : "none";
-  });
-  ptitle.textContent = o.label;
-  document.body.dataset.view = "detail";
-  rail.scrollTop = 0;
-}
-function closeOpt(){
-  const o = OPTS[openOptId];
-  if(o && o.node){
-    Array.prototype.forEach.call(o.node.parentElement.children, c=>{ c.style.display = ""; });
-  }
-  openOptId = -1;
-  document.body.dataset.view = "list";
-  syncList();
-}
-document.getElementById("pback").addEventListener("click", closeOpt);
-
 function setTab(i){
-  setMin(false);            // a tapped category always shows its contents
-  closeOpt();
-  SECTIONS.forEach((s,n)=> s.classList.toggle("on", n===i));
+  setMin(false);              // a tapped category always shows its contents
+  SECTIONS.forEach((s,n)=>{ s.classList.toggle("on", n===i); s.scrollTop = 0; });
   tabsEl.querySelectorAll(".tab").forEach((b,n)=> b.setAttribute("aria-selected", n===i ? "true":"false"));
-  const name = SECTIONS[i].dataset.sec;
-  const isRecipes = name === "Recipes";
-  strip.hidden = !isRecipes;
-  optList.hidden = isRecipes;
-  buildList(name);
+  strip.hidden = SECTIONS[i].dataset.sec !== "Recipes";
   const active = tabsEl.querySelector('.tab[aria-selected="true"]');
   if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"center"});
   rail.scrollTop = 0;
@@ -2241,7 +2184,7 @@ function measureSheet(){
 }
 
 /* A link that carries the whole look, so a plate can be sent to someone. */
-const SHARE_KEYS = LOOK.concat(["c0","c1","c2","mid","chroma","W","H","seed"]);
+const SHARE_KEYS = LOOK.concat(["mid","chroma","W","H","seed"]);   /* the ramp rides in LOOK */
 function encodeState(){
   const arr = SHARE_KEYS.map(k=>{
     const v = P[k];
@@ -2312,7 +2255,7 @@ if(draw){
   setMin(false);
   measureSheet();
   new ResizeObserver(measureSheet).observe(rail);
-  MOBILE.addEventListener("change", ()=>{ closeOpt(); measureSheet(); render(); });
+  MOBILE.addEventListener("change", ()=>{ measureSheet(); render(); });
   syncAll();
   render();
   refreshThumbs();

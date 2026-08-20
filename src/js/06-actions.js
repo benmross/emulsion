@@ -469,7 +469,7 @@ function measureSheet(){
 }
 
 /* A link that carries the whole look, so a plate can be sent to someone. */
-const SHARE_KEYS = LOOK.concat(["c0","c1","c2","mid","chroma","W","H","seed"]);
+const SHARE_KEYS = LOOK.concat(["mid","chroma","W","H","seed"]);   /* the ramp rides in LOOK */
 function encodeState(){
   const arr = SHARE_KEYS.map(k=>{
     const v = P[k];
@@ -540,7 +540,7 @@ if(draw){
   setMin(false);
   measureSheet();
   new ResizeObserver(measureSheet).observe(rail);
-  MOBILE.addEventListener("change", ()=>{ closeOpt(); measureSheet(); render(); });
+  MOBILE.addEventListener("change", ()=>{ measureSheet(); render(); });
   syncAll();
   render();
   refreshThumbs();

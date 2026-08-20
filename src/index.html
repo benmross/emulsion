@@ -93,21 +93,10 @@
   <aside class="rail" id="rail">
     <button class="grab" id="grab" aria-label="Collapse the panel" aria-expanded="true"></button>
 
-    <!-- one fixed-height body: the group's contents, or one open option -->
+    <!-- one fixed-height body, whichever group is showing -->
     <div class="sheetbody" id="sheetbody">
-    <div class="pnav" id="pnav">
-      <button class="pback" id="pback" type="button">
-        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 3.2 5 8l4.8 4.8"/></svg>
-        Back
-      </button>
-      <span class="ptitle" id="ptitle"></span>
-    </div>
-
-    <!-- the selected tab's contents: the recipe strip, or its list of options -->
-    <div class="panel" id="panel">
+      <!-- Recipes shows this; every other tab shows its own section -->
       <div class="peekplates" id="peekplates"></div>
-      <div class="optlist" id="optlist"></div>
-    </div>
 
       <!-- control sections are appended here -->
     </div>

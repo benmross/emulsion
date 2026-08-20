@@ -28,16 +28,18 @@ The pipeline, in order:
 | **Optics** | A 10-tap kernel blurs the field in scene units, stretchable along an axis for directional motion blur. Because it is applied to the field and not to pixels, blur is resolution-independent. |
 | **Motion** | The field walks a closed path in noise space and band phase advances exactly 2π per loop, so an animation returns to frame one exactly — loops are seamless by construction, not by crossfade. |
 | **Tone** | Exposure, black point, gamma, contrast pivot, gloss (a specular contour sharpener), vignette. |
-| **Color** | Luminance maps through a three-stop gradient — shadow, mid, light — with a movable mid stop and an invert. Thirteen presets from Silver and Ash to Cyanotype, Rosé, and Neon, or set the three stops by hand. |
+| **Color** | Luminance maps through a three-stop gradient — shadow, mid, light — with a movable mid stop and an invert. Fifteen presets from Silver and Steel to Cyanotype, Rosé, and Neon, or set the three stops by hand. |
 | **Grain** | Cell noise sized in *output* pixels, with density (what fraction of cells carry a speck) and midtone bias (film weights grain toward mid values; dial it down for grain that reaches into the shadows). Optional chroma grain. |
 | **Surface** | An optional overlay: diagonal dashes, brushed streaks, weave, or a luminance-sized halftone dot screen applied after tone mapping. |
 
 ## Plates
 
-Fourteen presets, each setting the full form/optics/tone/grain stack. A plate is
-a *look*, not a working setup: picking one moves only the keys it owns and
-resets the ones it does not name, while your palette, mid stop, output size,
-seed, and motion settings stay exactly where you put them.
+Fourteen presets, each setting the full form/optics/tone/colour/grain stack —
+and each carrying its own three-stop ramp, so no two plates land on the same
+colour. A plate is a *look*, not a working setup: picking one moves only the
+keys it owns and resets the ones it does not name, while your mid stop, output
+size, seed, and motion settings stay exactly where you put them. The ramp is
+still yours to change afterwards; the plate only sets where you start.
 
 ![Contact sheet of all fourteen plates](docs/recipes.png)
 
@@ -64,11 +66,13 @@ whichever control you are in, so the picture never jumps as you move around.
 
 A row of category tiles never leaves the bottom: **Recipes**, Form, Optics,
 Motion, Tone, Color, Grain, Surface, Output. Recipes opens onto a horizontally
-scrolling strip of plate thumbnails, each rendered live in your current palette,
-so you are picking from pictures rather than from fourteen identical words. Every
-other tile lists its options collapsed, label and current value; tapping one
-swaps the list for that single control and a **Back** button. Nothing is more
-than two taps deep.
+scrolling strip of plate thumbnails, so you are picking from pictures rather
+than from fourteen identical words. Every other tile shows that group's own
+controls right there — label on the left, slider, switch or picker on the
+right — so changing anything is one tap and a drag, with nothing to open and
+nothing to back out of. Pickers that would swallow the panel as a grid, the
+shapes and the palettes, scroll sideways instead and keep the current choice in
+view.
 
 **Shuffle**, **Save**, and **Share** sit as icons in the top right. Share hands
 the rendered PNG to the OS share sheet, which on iOS is the shortest path into
