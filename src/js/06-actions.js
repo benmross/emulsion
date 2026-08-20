@@ -6,22 +6,78 @@ function applyRecipe(r){
 }
 
 let activeRecipe = 0;
+const peekPlates = document.getElementById("peekplates");
+const caption = document.getElementById("caption");
+
 RECIPES.forEach((r,i)=>{
-  const b = el("button","chip",recipeBar);
-  b.type="button"; b.textContent=r.name;
-  b.addEventListener("click", ()=>{
-    applyRecipe(r);
-    activeRecipe = i;
-    syncRecipes(); syncAll(); schedule(); refreshThumbs();
+  [platesEl, peekPlates].forEach(host=>{
+    const b = el("button",null,host);
+    b.type = "button"; b.dataset.plate = i; b.title = r.name;
+    const img = el("img",null,b);
+    img.alt = r.name; img.decoding = "async";
+    el("span",null,b).textContent = r.name;
+    b.addEventListener("click", ()=> selectRecipe(i));
   });
 });
+
+function selectRecipe(i){
+  stopAttract();
+  applyRecipe(RECIPES[i]);
+  activeRecipe = i;
+  syncRecipes(); syncAll(); schedule(); refreshThumbs();
+  flashCaption(RECIPES[i].name);
+}
 function syncRecipes(){
-  recipeBar.querySelectorAll(".chip").forEach((b,i)=> b.setAttribute("aria-pressed", i===activeRecipe?"true":"false"));
-  const name = activeRecipe>=0 ? RECIPES[activeRecipe].name : SHAPES[P.shape].name+" · shuffled";
+  document.querySelectorAll("[data-plate]").forEach(b=>{
+    b.setAttribute("aria-pressed", (+b.dataset.plate) === activeRecipe ? "true" : "false");
+  });
+  const name = activeRecipe >= 0 ? RECIPES[activeRecipe].name : SHAPES[P.shape].name+" · shuffled";
   document.getElementById("nowName").innerHTML = "<i>plate</i> <b>"+name+"</b>";
+  const tile = peekPlates.querySelector('[aria-pressed="true"]');
+  if(tile && tile.scrollIntoView) tile.scrollIntoView({block:"nearest", inline:"center", behavior:"smooth"});
 }
 binders.push(syncRecipes);
 syncRecipes();
+
+/* ---------- the plate name, shown while cycling and after a pick ---------- */
+let capTimer = 0;
+function flashCaption(name){
+  caption.querySelector("b").textContent = name;
+  document.body.classList.add("captioning");
+  clearTimeout(capTimer);
+  capTimer = setTimeout(()=> document.body.classList.remove("captioning"), 1400);
+}
+
+/* ---------- on arrival, show what the thing can do ---------- */
+let attractTimer = 0, attractStep = 0, attractOrder = [];
+function startAttract(){
+  if(!draw || /[#&]p=/.test(location.hash)) return;
+  attractOrder = RECIPES.map((_,i)=>i).sort(()=> Math.random()-0.5);
+  document.body.classList.add("attracting");
+  const tick = ()=>{
+    if(attractStep >= attractOrder.length){ stopAttract(); return; }
+    const i = attractOrder[attractStep++];
+    applyRecipe(RECIPES[i]);
+    activeRecipe = i;
+    P.seed = Math.round(Math.random()*9999)/10000;
+    syncRecipes(); syncAll(); render();
+    caption.querySelector("b").textContent = RECIPES[i].name;
+    document.body.classList.remove("captioning");
+    void caption.offsetWidth;
+    document.body.classList.add("captioning");
+  };
+  tick();
+  attractTimer = setInterval(tick, 1900);
+}
+function stopAttract(){
+  if(!attractTimer) return;
+  clearInterval(attractTimer); attractTimer = 0;
+  document.body.classList.remove("attracting");
+  setTimeout(()=> document.body.classList.remove("captioning"), 900);
+  refreshThumbs();
+}
+["pointerdown","keydown","wheel","touchstart"].forEach(ev=>
+  window.addEventListener(ev, stopAttract, {passive:true}));
 
 const rnd = (a,b)=> a + Math.random()*(b-a);
 document.getElementById("shuffle").addEventListener("click", shuffle);
@@ -88,8 +144,9 @@ document.addEventListener("fullscreenchange", ()=>{ if(!fsEl()) exitImmersive();
 
 /* a tap on the plate opens it full-bleed on touch devices, and hides the HUD once there */
 canvas.addEventListener("click", ()=>{
+  stopAttract();
   if(document.body.classList.contains("immersive")) document.body.classList.toggle("hud-off");
-  else if(COARSE) enterImmersive();
+  else if(MOBILE.matches) document.body.classList.toggle("ui-off");
 });
 
 function syncHud(){
@@ -146,6 +203,56 @@ async function saveBlob(blob, filename){
 }
 let exporting = false;
 document.getElementById("export").addEventListener("click", exportStill);
+
+function stillName(fmt){
+  return "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+P.W+"x"+P.H
+       + "_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg" ? "jpg" : fmt);
+}
+async function makeStill(){
+  draw(P, P.W, P.H, 1, phase);
+  let fmt = P.fmt;
+  let blob = await toBlob(MIME[fmt], QUAL[fmt]);
+  if(blob && blob.size > LIMIT && fmt === "png"){
+    const alt = await toBlob(MIME.webp, QUAL.webp);
+    if(alt && alt.size < blob.size){ blob = alt; fmt = "webp"; msg("PNG exceeded 16 MB — exported as WebP"); }
+  }
+  return {blob, fmt};
+}
+
+/* Hand the image to the OS share sheet where there is one — on iOS that is the
+   only route into Photos that does not go through the Files app. */
+async function sharePlate(){
+  if(!draw || exporting) return;
+  exporting = true; recording = true;
+  busy.textContent = "preparing image…";
+  busy.classList.add("on");
+  try{
+    const {blob, fmt} = await makeStill();
+    if(!blob){ msg("could not render the image"); return; }
+    const name = stillName(fmt);
+    const file = typeof File !== "undefined" ? new File([blob], name, {type: MIME[fmt]}) : null;
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      try {
+        await navigator.share({files:[file], title:"Emulsion"});
+        msg("shared");
+      } catch(err){
+        if(err && err.name === "AbortError") msg("share canceled");
+        else if(err && err.name === "NotAllowedError") msg("share needs a fresh tap — try Share again");
+        else await saveBlob(blob, name);
+      }
+    } else {
+      await saveBlob(blob, name);
+    }
+  } catch(err){
+    console.error(err);
+    msg("share failed · "+(err && err.message ? err.message : "unknown error"));
+  } finally {
+    busy.classList.remove("on");
+    exporting = false; recording = false;
+    render();
+  }
+}
+
 async function exportStill(){
   if(!draw || exporting) return;
   exporting = true; recording = true;
@@ -153,19 +260,9 @@ async function exportStill(){
   busy.classList.add("on");
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
   try{
-    draw(P, P.W, P.H, 1, phase);
-    let fmt = P.fmt;
-    let blob = await toBlob(MIME[fmt], QUAL[fmt]);
-    if(blob && blob.size > LIMIT && fmt === "png"){
-      fmt = "webp";
-      const alt = await toBlob(MIME.webp, QUAL.webp);
-      if(alt && alt.size < blob.size){ blob = alt; msg("PNG exceeded 16 MB — exported as WebP"); }
-    }
+    const {blob, fmt} = await makeStill();
     if(!blob){ msg("export failed — try another format"); }
-    else {
-      const name = "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+P.W+"x"+P.H+"_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg"?"jpg":fmt);
-      await saveBlob(blob, name);
-    }
+    else await saveBlob(blob, stillName(fmt));
   } catch(err){
     console.error(err);
     msg("export failed · "+(err && err.message ? err.message : "unknown error"));
@@ -177,6 +274,8 @@ async function exportStill(){
 }
 
 /* ---------- a set of stills, for Photo Shuffle ---------- */
+linkBtn.addEventListener("click", copyLink);
+
 setBtn.addEventListener("click", async ()=>{
   if(!draw || exporting) return;
   const n = P.setsize, keepSeed = P.seed;
@@ -324,11 +423,83 @@ recBtn.addEventListener("click", async ()=>{
   }
 });
 
+/* ============================== sheet + link ============================== */
+const grab = document.getElementById("grab");
+const actTune = document.getElementById("actTune");
+const fitBtn = document.getElementById("fitBtn");
+
+function setSheet(open){
+  document.body.classList.toggle("sheet-open", open);
+  grab.setAttribute("aria-expanded", open ? "true" : "false");
+  actTune.querySelector("span").textContent = open ? "▾" : "≡";
+  actTune.lastChild.nodeValue = open ? "Close" : "Tune";
+}
+function toggleSheet(){ setSheet(!document.body.classList.contains("sheet-open")); }
+grab.addEventListener("click", toggleSheet);
+actTune.addEventListener("click", toggleSheet);
+document.getElementById("actShuffle").addEventListener("click", ()=>{ stopAttract(); shuffle(); });
+document.getElementById("actSave").addEventListener("click", exportStill);
+document.getElementById("actShare").addEventListener("click", sharePlate);
+
+function syncFit(){ fitBtn.textContent = P.fill ? "Fill" : "Fit"; fitBtn.classList.toggle("on", !!P.fill); }
+fitBtn.addEventListener("click", ()=>{ P.fill = !P.fill; syncFit(); render(); });
+binders.push(syncFit);
+document.getElementById("hideBtn").addEventListener("click", ()=>{
+  document.body.classList.add("ui-off");
+  msg("tap the plate to bring the controls back");
+});
+
+/* A link that carries the whole look, so a plate can be sent to someone. */
+const SHARE_KEYS = LOOK.concat(["c0","c1","c2","mid","chroma","W","H","seed"]);
+function encodeState(){
+  const arr = SHARE_KEYS.map(k=>{
+    const v = P[k];
+    if(typeof v === "number") return Math.round(v*1000)/1000;
+    if(typeof v === "boolean") return v ? 1 : 0;
+    return v;
+  });
+  return btoa(JSON.stringify(arr)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function decodeState(str){
+  try{
+    const arr = JSON.parse(atob(str.replace(/-/g,"+").replace(/_/g,"/")));
+    if(!Array.isArray(arr) || arr.length !== SHARE_KEYS.length) return false;
+    SHARE_KEYS.forEach((k,i)=>{
+      const def = DEFAULTS[k], v = arr[i];
+      if(typeof def === "boolean") P[k] = !!v;
+      else if(typeof def === "number") P[k] = Number.isFinite(+v) ? +v : def;
+      else P[k] = /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : def;
+    });
+    P.W = Math.max(64, Math.min(8192, Math.round(P.W)));
+    P.H = Math.max(64, Math.min(8192, Math.round(P.H)));
+    return true;
+  } catch(e){ return false; }
+}
+async function copyLink(){
+  const url = location.origin + location.pathname + "#p=" + encodeState();
+  try {
+    await navigator.clipboard.writeText(url);
+    msg("link copied — it carries this exact look");
+  } catch(e){
+    location.hash = "p=" + encodeState();
+    msg("link is in the address bar — copy it from there");
+  }
+}
+
 /* ============================== go ============================== */
 if(draw){
   let rt = 0;
   new ResizeObserver(()=>{ clearTimeout(rt); rt = setTimeout(render, 80); }).observe(plate);
   window.addEventListener("resize", ()=>{ clearTimeout(rt); rt = setTimeout(render, 80); });
+
+  if(MOBILE.matches) P.fill = true;            // edge to edge is the point on a phone
+  const link = /[#&]p=([A-Za-z0-9_\-]+)/.exec(location.hash);
+  const fromLink = link && decodeState(link[1]);
+  if(fromLink){ activeRecipe = -1; flashCaption("Shared look"); }
+
+  setSheet(false);
+  syncAll();
   render();
   refreshThumbs();
+  if(!fromLink) startAttract();
 }

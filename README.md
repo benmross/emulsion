@@ -58,18 +58,24 @@ sizes, and a 4:5 print ratio; any custom size works too.
 
 ## On a phone
 
-The layout switches to a preview over a tabbed control sheet — one group at a
-time instead of one long scroll — with touch-sized sliders that will not drag
-the sheet out from under you.
+The plate *is* the page: it fills the screen edge to edge, and everything else
+floats over it and can be dismissed. Tapping the plate hides the entire
+interface for a clean look at the wallpaper; tapping again brings it back.
 
-Tap the preview (or the fullscreen button, or `F` on a keyboard) for a
-full-bleed view: the plate fills the screen with a floating bar for
-fit/fill, play, shuffle, and export, and a second tap hides even that. It uses
-the Fullscreen API where the browser allows it and falls back to a CSS
-full-bleed mode where it does not — which is every iPhone, since Safari refuses
-`requestFullscreen` on anything but a `<video>`. **Fill** crops the plate to the
-screen, showing exactly how it will sit as a wallpaper; **Fit** shows the whole
-frame.
+A bottom sheet peeks with a scrollable strip of plate thumbnails — each one
+rendered live in your current palette, so you are picking from pictures rather
+than from fourteen identical words — over four actions: **Shuffle**, **Save**,
+**Share**, and **Tune**, which slides the full tabbed controls up over the
+image. **Share** hands the rendered PNG to the OS share sheet, which on iOS is
+the shortest path into Photos. **Fill** crops the plate to the screen the way a
+wallpaper actually sits; **Fit** shows the whole frame.
+
+On arrival the page cycles through every plate, naming each one, until you
+touch it — so the range is visible before you know there are any controls.
+
+**Copy link to this look** (in Output) encodes the entire plate — form, optics,
+tone, palette, grain, size, seed — into the URL, so a look can be sent to
+someone and opens exactly as you left it.
 
 ## Wallpapers on iOS
 

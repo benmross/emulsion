@@ -175,7 +175,7 @@ body.immersive .hud{
 }
 body.immersive.hud-off .hud{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(12px)}
 .hudbtn{
-  border:0;background:transparent;color:var(--text);cursor:pointer;
+  line-height:1;border:0;background:transparent;color:var(--text);cursor:pointer;
   min-height:38px;padding:0 13px;border-radius:999px;font-size:12.5px;
 }
 .hudbtn:hover{background:rgba(255,255,255,.08)}
@@ -267,6 +267,94 @@ input[type=range]:hover::-moz-range-thumb{background:var(--gold-lo)}
 .seg button:hover{color:var(--text)}
 .seg button[aria-pressed="true"]{background:var(--raise);color:var(--text);box-shadow:inset 0 0 0 1px #2E3136}
 
+/* plate picker — a contact sheet, not a row of identical pills */
+.plates{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.plates button{
+  position:relative;padding:0;border:1px solid var(--line);background:#0C0D0F;border-radius:9px;
+  overflow:hidden;cursor:pointer;aspect-ratio:3/4;transition:.15s border-color,.15s transform;
+}
+.plates button:hover{border-color:#3A3D43}
+.plates button[aria-pressed="true"]{border-color:transparent}
+.plates button[aria-pressed="true"]::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:var(--gold-grad);opacity:.85;pointer-events:none;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+}
+.plates img{width:100%;height:100%;object-fit:cover;display:block;opacity:.94}
+.plates span{
+  position:absolute;left:0;right:0;bottom:0;padding:3px 4px 4px;
+  font-family:"JetBrains Mono",monospace;font-size:8px;letter-spacing:.06em;text-transform:uppercase;
+  color:#D6D4CF;background:linear-gradient(transparent,rgba(0,0,0,.86) 55%);text-align:center;
+}
+.plates button[aria-pressed="true"] span{color:var(--gold-hi)}
+
+/* floating controls over the plate */
+.viewtools{display:none;position:absolute;top:10px;right:10px;gap:6px;z-index:12}
+.vbtn{
+  line-height:1;border:1px solid rgba(255,255,255,.1);background:rgba(10,11,13,.6);backdrop-filter:blur(10px);
+  color:var(--text);font-size:11.5px;padding:8px 12px;border-radius:999px;cursor:pointer;min-height:36px;
+}
+.vbtn.on{background:var(--gold-soft);color:var(--gold-txt);border-color:var(--gold-line)}
+.caption{
+  position:absolute;left:0;right:0;bottom:16px;margin:0;z-index:11;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  line-height:1.25;  /* .frame zeroes line-height to kill canvas gaps */
+  pointer-events:none;opacity:0;transition:opacity .3s ease;
+}
+.caption b{
+  font-family:Syne,sans-serif;font-weight:700;font-size:18px;letter-spacing:-.01em;
+  color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.9), 0 0 40px rgba(0,0,0,.6);
+}
+.caption span{
+  font-family:"JetBrains Mono",monospace;font-size:9.5px;
+  letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.66);
+  text-shadow:0 2px 14px rgba(0,0,0,.95), 0 0 30px rgba(0,0,0,.7);
+}
+body.attracting .caption,
+body.captioning .caption{opacity:1}
+body:not(.attracting) .caption span{display:none}
+body.attracting .caption b,
+body.captioning .caption b{animation:capfade .4s ease}
+@keyframes capfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* the sheet's peek row (mobile) */
+.peek{display:none}
+.grab{
+  display:block;width:100%;padding:9px 0 7px;background:none;border:0;cursor:pointer;
+}
+.grab::before{
+  content:"";display:block;width:38px;height:4px;border-radius:99px;margin:0 auto;
+  background:#3A3D43;transition:background .15s;
+}
+.grab:hover::before{background:#4E525A}
+.peekplates{
+  display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;
+  padding:2px 12px 10px;scroll-snap-type:x proximity;
+}
+.peekplates::-webkit-scrollbar{display:none}
+.peekplates button{
+  position:relative;flex:0 0 auto;width:58px;aspect-ratio:3/4;padding:0;scroll-snap-align:center;
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#0C0D0F;cursor:pointer;
+}
+.peekplates button[aria-pressed="true"]{border-color:var(--gold-lo);box-shadow:0 0 0 1px var(--gold-line)}
+.peekplates img{width:100%;height:100%;object-fit:cover;display:block}
+.peekplates span{
+  position:absolute;left:0;right:0;bottom:0;padding:2px 2px 3px;text-align:center;
+  font-family:"JetBrains Mono",monospace;font-size:7px;letter-spacing:.04em;text-transform:uppercase;
+  color:#DEDCD7;background:linear-gradient(transparent,rgba(0,0,0,.85) 60%);
+}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:0 12px 4px}
+.act{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  min-height:52px;border:1px solid var(--line);background:#0C0D0F;border-radius:11px;
+  color:var(--mute);font-size:11px;cursor:pointer;
+}
+.act span{font-size:15px;line-height:1;color:var(--text)}
+.act.primary{background:var(--gold-soft);border-color:var(--gold-line);color:var(--gold-txt)}
+.act.primary span{color:var(--gold-hi)}
+
 /* shape picker */
 .shapes{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .shapes button{
@@ -334,34 +422,57 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
 .nogl{max-width:38ch;margin:auto;text-align:center;color:var(--mute);line-height:1.6;font-size:13px}
 
 @media (max-width:980px){
-  /* one column: preview on top, a control sheet under it — neither scrolls the page */
-  .app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
-  .stage{min-height:0}
-  .rail{
-    border-left:0;border-top:1px solid var(--line);
-    height:min(46dvh,430px);border-radius:14px 14px 0 0;
-    box-shadow:0 -20px 44px -26px #000;
-    padding-bottom:calc(20px + env(safe-area-inset-bottom));
+  /* the plate fills the screen; everything else floats over it and can be dismissed */
+  .app{display:block;height:100dvh;overflow:hidden}
+  .stage{position:fixed;inset:0;background:#000}
+  .plate{position:absolute;inset:0;padding:0;background:#000;background-image:none}
+  .frame{
+    position:absolute;inset:0;max-width:none;max-height:none;
+    border:0;border-radius:0;box-shadow:none;overflow:hidden;
+    display:grid;place-items:center;
   }
-  .tabs{display:flex}
+  canvas#gl{max-width:none;max-height:none}
+  .status{display:none}
 
-  /* one group at a time — the tab names it, so the heading goes */
-  .sec{display:none;padding:14px 14px 22px}
-  .sec.on{display:block}
+  .topbar{
+    position:fixed;top:0;left:0;right:0;z-index:15;border-bottom:0;backdrop-filter:none;
+    padding:calc(9px + env(safe-area-inset-top)) 14px 22px;
+    background:linear-gradient(rgba(5,6,7,.78),rgba(5,6,7,0));
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  .topbar .tools{display:none}
+  .mark h1{font-size:15px}
+  .rule{display:block;height:13px}
+  .now{font-size:10px;letter-spacing:.13em}
+  .viewtools{display:flex;top:calc(11px + env(safe-area-inset-top));right:12px}
+
+  body.ui-off .topbar{opacity:0;transform:translateY(-10px);pointer-events:none}
+  body.ui-off .viewtools{opacity:0;pointer-events:none}
+  body.ui-off .rail{transform:translateY(115%)}
+
+  /* bottom sheet: peek by default, full controls when opened */
+  .rail{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;height:auto;
+    max-height:none;border:0;border-top:1px solid rgba(255,255,255,.09);
+    border-radius:16px 16px 0 0;background:rgba(13,14,16,.9);backdrop-filter:blur(20px);
+    box-shadow:0 -26px 54px -30px #000;overflow:hidden;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom));
+    transition:transform .26s ease;
+  }
+  .peek{display:block}
+  .tabs,.sec{display:none}
+  body.sheet-open .rail{max-height:80dvh;overflow-y:auto}
+  body.sheet-open .tabs{display:flex}
+  body.sheet-open .sec.on{display:block}
+  body.sheet-open .peekplates{display:none}
+
+  .sec{padding:14px 14px 22px}
   .sec > h2{display:none}
   .stack{gap:19px}
-
-  .topbar{gap:10px;padding:10px 12px}
-  .mark h1{font-size:15px}
-  .rule,.now i,#shuffle kbd{display:none}
-  .now{font-size:10px;letter-spacing:.12em}
-  .plate{padding:10px;background-size:32px 32px}
-  .status{gap:10px;padding:7px 12px;font-size:10px}
-  .status .hide-sm{display:none}
+  .plates{grid-template-columns:repeat(4,1fr)}
 
   /* touch targets */
   .btn{padding:11px 13px;min-height:44px}
-  .btn.icon{padding:11px 12px}
   .btn.wide{min-height:48px}
   .row label{font-size:14px}
   .row .val{font-size:12.5px}
@@ -375,18 +486,17 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   .switch{width:46px;height:26px}
   .switch::after{width:20px;height:20px}
   .switch[aria-pressed="true"]::after{transform:translateX(20px)}
-  .shapes{gap:8px}
   .sw{height:40px}
   .pal{padding:7px 11px 7px 7px;font-size:12.5px}
-  /* 16px keeps iOS from zooming the page on focus */
   .field input,select.sel{padding:12px 10px;font-size:16px}
   .dims .x{padding-top:20px}
   .hint{font-size:12px}
+  .caption{bottom:calc(198px + env(safe-area-inset-bottom))}
+  body.ui-off .caption{bottom:calc(40px + env(safe-area-inset-bottom))}
 }
-@media (max-width:420px){
-  .mark h1{font-size:14px}
-  .now{display:none}
-  .btn{padding:10px 11px;font-size:12.5px}
+@media (max-width:400px){
+  .act{font-size:10.5px;min-height:48px}
+  .peekplates button{width:52px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -421,6 +531,11 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
           <div class="g controls"><span>controls</span></div>
         </div>
         <div class="busy" id="busy">rendering full size…</div>
+        <div class="viewtools" id="viewtools">
+          <button class="vbtn" id="fitBtn" aria-label="Fit or fill the screen">Fit</button>
+          <button class="vbtn" id="hideBtn" aria-label="Hide the interface">Hide</button>
+        </div>
+        <p class="caption" id="caption" aria-live="polite"><b>Limb</b><span>14 plates · tap to take over</span></p>
         <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
           <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
           <button class="hudbtn" data-act="fill">Fit</button>
@@ -446,6 +561,16 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   </section>
 
   <aside class="rail" id="rail">
+    <div class="peek" id="peek">
+      <button class="grab" id="grab" aria-label="Show all controls" aria-expanded="false"></button>
+      <div class="peekplates" id="peekplates"></div>
+      <div class="acts">
+        <button class="act" id="actShuffle"><span>⤮</span>Shuffle</button>
+        <button class="act" id="actSave"><span>↓</span>Save</button>
+        <button class="act" id="actShare"><span>↗</span>Share</button>
+        <button class="act primary" id="actTune"><span>≡</span>Tune</button>
+      </div>
+    </div>
     <nav class="tabs" id="tabs" role="tablist" aria-label="Control groups"></nav>
   </aside>
 </div>
@@ -847,7 +972,7 @@ if(!draw){
   plate.appendChild(n);
 } else {
   thumbCanvas = document.createElement("canvas");
-  thumbCanvas.width = 90; thumbCanvas.height = 120;
+  thumbCanvas.width = 96; thumbCanvas.height = 128;
   try { drawThumb = makeRenderer(thumbCanvas); } catch(e){ drawThumb = null; }
 }
 
@@ -862,10 +987,11 @@ function schedule(){
 }
 function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale, phase); }
 const COARSE = !!(window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
+const MOBILE = window.matchMedia("(max-width:980px)");
 function render(){
   if(!draw || recording) return;
   const asp = P.W / P.H;
-  const immersive = document.body.classList.contains("immersive");
+  const immersive = document.body.classList.contains("immersive") || MOBILE.matches;
   let dispW, dispH;
   if(immersive){
     // fill crops to the screen (how a wallpaper actually sits); fit shows the whole plate
@@ -935,16 +1061,29 @@ function msg(text){
   msgTimer = setTimeout(()=>{ stMsg.textContent=""; }, 5000);
 }
 
-/* thumbnails reflect the current palette + grain, so the picker reads as a contact sheet */
-let thumbTimer = 0;
+/* Every picker is a contact sheet rendered in the user's own palette, so the
+   shapes preview the current plate and the plates preview the current colours. */
+let thumbTimer = 0, plateSig = "";
+const TW = 96, TH = 128;
 function refreshThumbs(){
   if(!drawThumb) return;
   clearTimeout(thumbTimer);
   thumbTimer = setTimeout(()=>{
+    const ps = TW / P.W;
     document.querySelectorAll(".shapes img").forEach((img,i)=>{
-      const q = Object.assign({}, P, {shape:i, W:90, H:120});
-      drawThumb(q, 90, 120, 90/P.W);
+      drawThumb(Object.assign({}, P, {shape:i}), TW, TH, ps, 0);
       img.src = thumbCanvas.toDataURL("image/png");
+    });
+    // plate tiles only depend on colour and grain, so skip the work when neither moved
+    const sig = [P.c0,P.c1,P.c2,P.mid,P.chroma,P.grain,P.gsize,P.gdens,P.gresp,P.W,P.H].join("|");
+    if(sig === plateSig) return;
+    plateSig = sig;
+    RECIPES.forEach((r,i)=>{
+      const q = Object.assign({}, P);
+      for(const k of LOOK) q[k] = (k in r.p) ? r.p[k] : DEFAULTS[k];
+      drawThumb(q, TW, TH, ps, 0);
+      const src = thumbCanvas.toDataURL("image/png");
+      document.querySelectorAll('[data-plate="'+i+'"] img').forEach(img => { img.src = src; });
     });
   }, 200);
 }
@@ -1033,9 +1172,9 @@ function segmented(host, key, options, onAfter){
 
 /* ============================== rail ============================== */
 const gRecipes = section("Recipes");
-const recipeBar = el("div","recipes",gRecipes);
-recipeBar.setAttribute("role","group");
-recipeBar.setAttribute("aria-label","Recipes");
+const platesEl = el("div","plates",gRecipes);
+platesEl.setAttribute("role","group");
+platesEl.setAttribute("aria-label","Plates");
 
 const gForm = section("Form");
 
@@ -1215,6 +1354,9 @@ setSel.addEventListener("change", ()=>{ P.setsize = parseInt(setSel.value,10); }
 binders.push(()=>{ setSel.value = P.setsize; });
 const setBtn = el("button","btn",setRow);
 setBtn.type="button"; setBtn.textContent="Export set";
+
+const linkBtn = el("button","btn wide",gOut);
+linkBtn.type="button"; linkBtn.textContent="Copy link to this look";
 
 const hint = el("p","hint",gOut.parentElement);
 hint.innerHTML = 'Grain is measured in <em>output</em> pixels — the preview scales it to match, so a 1&nbsp;px grain stays 1&nbsp;px in the export. <b>Export set</b> writes a batch of seeds for an iPhone Photo&nbsp;Shuffle album; <b>Record loop</b> writes a video for a Live&nbsp;Photo lock screen. Press <kbd>R</kbd> to reshuffle.';
@@ -1413,22 +1555,78 @@ function applyRecipe(r){
 }
 
 let activeRecipe = 0;
+const peekPlates = document.getElementById("peekplates");
+const caption = document.getElementById("caption");
+
 RECIPES.forEach((r,i)=>{
-  const b = el("button","chip",recipeBar);
-  b.type="button"; b.textContent=r.name;
-  b.addEventListener("click", ()=>{
-    applyRecipe(r);
-    activeRecipe = i;
-    syncRecipes(); syncAll(); schedule(); refreshThumbs();
+  [platesEl, peekPlates].forEach(host=>{
+    const b = el("button",null,host);
+    b.type = "button"; b.dataset.plate = i; b.title = r.name;
+    const img = el("img",null,b);
+    img.alt = r.name; img.decoding = "async";
+    el("span",null,b).textContent = r.name;
+    b.addEventListener("click", ()=> selectRecipe(i));
   });
 });
+
+function selectRecipe(i){
+  stopAttract();
+  applyRecipe(RECIPES[i]);
+  activeRecipe = i;
+  syncRecipes(); syncAll(); schedule(); refreshThumbs();
+  flashCaption(RECIPES[i].name);
+}
 function syncRecipes(){
-  recipeBar.querySelectorAll(".chip").forEach((b,i)=> b.setAttribute("aria-pressed", i===activeRecipe?"true":"false"));
-  const name = activeRecipe>=0 ? RECIPES[activeRecipe].name : SHAPES[P.shape].name+" · shuffled";
+  document.querySelectorAll("[data-plate]").forEach(b=>{
+    b.setAttribute("aria-pressed", (+b.dataset.plate) === activeRecipe ? "true" : "false");
+  });
+  const name = activeRecipe >= 0 ? RECIPES[activeRecipe].name : SHAPES[P.shape].name+" · shuffled";
   document.getElementById("nowName").innerHTML = "<i>plate</i> <b>"+name+"</b>";
+  const tile = peekPlates.querySelector('[aria-pressed="true"]');
+  if(tile && tile.scrollIntoView) tile.scrollIntoView({block:"nearest", inline:"center", behavior:"smooth"});
 }
 binders.push(syncRecipes);
 syncRecipes();
+
+/* ---------- the plate name, shown while cycling and after a pick ---------- */
+let capTimer = 0;
+function flashCaption(name){
+  caption.querySelector("b").textContent = name;
+  document.body.classList.add("captioning");
+  clearTimeout(capTimer);
+  capTimer = setTimeout(()=> document.body.classList.remove("captioning"), 1400);
+}
+
+/* ---------- on arrival, show what the thing can do ---------- */
+let attractTimer = 0, attractStep = 0, attractOrder = [];
+function startAttract(){
+  if(!draw || /[#&]p=/.test(location.hash)) return;
+  attractOrder = RECIPES.map((_,i)=>i).sort(()=> Math.random()-0.5);
+  document.body.classList.add("attracting");
+  const tick = ()=>{
+    if(attractStep >= attractOrder.length){ stopAttract(); return; }
+    const i = attractOrder[attractStep++];
+    applyRecipe(RECIPES[i]);
+    activeRecipe = i;
+    P.seed = Math.round(Math.random()*9999)/10000;
+    syncRecipes(); syncAll(); render();
+    caption.querySelector("b").textContent = RECIPES[i].name;
+    document.body.classList.remove("captioning");
+    void caption.offsetWidth;
+    document.body.classList.add("captioning");
+  };
+  tick();
+  attractTimer = setInterval(tick, 1900);
+}
+function stopAttract(){
+  if(!attractTimer) return;
+  clearInterval(attractTimer); attractTimer = 0;
+  document.body.classList.remove("attracting");
+  setTimeout(()=> document.body.classList.remove("captioning"), 900);
+  refreshThumbs();
+}
+["pointerdown","keydown","wheel","touchstart"].forEach(ev=>
+  window.addEventListener(ev, stopAttract, {passive:true}));
 
 const rnd = (a,b)=> a + Math.random()*(b-a);
 document.getElementById("shuffle").addEventListener("click", shuffle);
@@ -1495,8 +1693,9 @@ document.addEventListener("fullscreenchange", ()=>{ if(!fsEl()) exitImmersive();
 
 /* a tap on the plate opens it full-bleed on touch devices, and hides the HUD once there */
 canvas.addEventListener("click", ()=>{
+  stopAttract();
   if(document.body.classList.contains("immersive")) document.body.classList.toggle("hud-off");
-  else if(COARSE) enterImmersive();
+  else if(MOBILE.matches) document.body.classList.toggle("ui-off");
 });
 
 function syncHud(){
@@ -1553,6 +1752,56 @@ async function saveBlob(blob, filename){
 }
 let exporting = false;
 document.getElementById("export").addEventListener("click", exportStill);
+
+function stillName(fmt){
+  return "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+P.W+"x"+P.H
+       + "_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg" ? "jpg" : fmt);
+}
+async function makeStill(){
+  draw(P, P.W, P.H, 1, phase);
+  let fmt = P.fmt;
+  let blob = await toBlob(MIME[fmt], QUAL[fmt]);
+  if(blob && blob.size > LIMIT && fmt === "png"){
+    const alt = await toBlob(MIME.webp, QUAL.webp);
+    if(alt && alt.size < blob.size){ blob = alt; fmt = "webp"; msg("PNG exceeded 16 MB — exported as WebP"); }
+  }
+  return {blob, fmt};
+}
+
+/* Hand the image to the OS share sheet where there is one — on iOS that is the
+   only route into Photos that does not go through the Files app. */
+async function sharePlate(){
+  if(!draw || exporting) return;
+  exporting = true; recording = true;
+  busy.textContent = "preparing image…";
+  busy.classList.add("on");
+  try{
+    const {blob, fmt} = await makeStill();
+    if(!blob){ msg("could not render the image"); return; }
+    const name = stillName(fmt);
+    const file = typeof File !== "undefined" ? new File([blob], name, {type: MIME[fmt]}) : null;
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      try {
+        await navigator.share({files:[file], title:"Emulsion"});
+        msg("shared");
+      } catch(err){
+        if(err && err.name === "AbortError") msg("share canceled");
+        else if(err && err.name === "NotAllowedError") msg("share needs a fresh tap — try Share again");
+        else await saveBlob(blob, name);
+      }
+    } else {
+      await saveBlob(blob, name);
+    }
+  } catch(err){
+    console.error(err);
+    msg("share failed · "+(err && err.message ? err.message : "unknown error"));
+  } finally {
+    busy.classList.remove("on");
+    exporting = false; recording = false;
+    render();
+  }
+}
+
 async function exportStill(){
   if(!draw || exporting) return;
   exporting = true; recording = true;
@@ -1560,19 +1809,9 @@ async function exportStill(){
   busy.classList.add("on");
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
   try{
-    draw(P, P.W, P.H, 1, phase);
-    let fmt = P.fmt;
-    let blob = await toBlob(MIME[fmt], QUAL[fmt]);
-    if(blob && blob.size > LIMIT && fmt === "png"){
-      fmt = "webp";
-      const alt = await toBlob(MIME.webp, QUAL.webp);
-      if(alt && alt.size < blob.size){ blob = alt; msg("PNG exceeded 16 MB — exported as WebP"); }
-    }
+    const {blob, fmt} = await makeStill();
     if(!blob){ msg("export failed — try another format"); }
-    else {
-      const name = "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+P.W+"x"+P.H+"_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg"?"jpg":fmt);
-      await saveBlob(blob, name);
-    }
+    else await saveBlob(blob, stillName(fmt));
   } catch(err){
     console.error(err);
     msg("export failed · "+(err && err.message ? err.message : "unknown error"));
@@ -1584,6 +1823,8 @@ async function exportStill(){
 }
 
 /* ---------- a set of stills, for Photo Shuffle ---------- */
+linkBtn.addEventListener("click", copyLink);
+
 setBtn.addEventListener("click", async ()=>{
   if(!draw || exporting) return;
   const n = P.setsize, keepSeed = P.seed;
@@ -1731,12 +1972,84 @@ recBtn.addEventListener("click", async ()=>{
   }
 });
 
+/* ============================== sheet + link ============================== */
+const grab = document.getElementById("grab");
+const actTune = document.getElementById("actTune");
+const fitBtn = document.getElementById("fitBtn");
+
+function setSheet(open){
+  document.body.classList.toggle("sheet-open", open);
+  grab.setAttribute("aria-expanded", open ? "true" : "false");
+  actTune.querySelector("span").textContent = open ? "▾" : "≡";
+  actTune.lastChild.nodeValue = open ? "Close" : "Tune";
+}
+function toggleSheet(){ setSheet(!document.body.classList.contains("sheet-open")); }
+grab.addEventListener("click", toggleSheet);
+actTune.addEventListener("click", toggleSheet);
+document.getElementById("actShuffle").addEventListener("click", ()=>{ stopAttract(); shuffle(); });
+document.getElementById("actSave").addEventListener("click", exportStill);
+document.getElementById("actShare").addEventListener("click", sharePlate);
+
+function syncFit(){ fitBtn.textContent = P.fill ? "Fill" : "Fit"; fitBtn.classList.toggle("on", !!P.fill); }
+fitBtn.addEventListener("click", ()=>{ P.fill = !P.fill; syncFit(); render(); });
+binders.push(syncFit);
+document.getElementById("hideBtn").addEventListener("click", ()=>{
+  document.body.classList.add("ui-off");
+  msg("tap the plate to bring the controls back");
+});
+
+/* A link that carries the whole look, so a plate can be sent to someone. */
+const SHARE_KEYS = LOOK.concat(["c0","c1","c2","mid","chroma","W","H","seed"]);
+function encodeState(){
+  const arr = SHARE_KEYS.map(k=>{
+    const v = P[k];
+    if(typeof v === "number") return Math.round(v*1000)/1000;
+    if(typeof v === "boolean") return v ? 1 : 0;
+    return v;
+  });
+  return btoa(JSON.stringify(arr)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function decodeState(str){
+  try{
+    const arr = JSON.parse(atob(str.replace(/-/g,"+").replace(/_/g,"/")));
+    if(!Array.isArray(arr) || arr.length !== SHARE_KEYS.length) return false;
+    SHARE_KEYS.forEach((k,i)=>{
+      const def = DEFAULTS[k], v = arr[i];
+      if(typeof def === "boolean") P[k] = !!v;
+      else if(typeof def === "number") P[k] = Number.isFinite(+v) ? +v : def;
+      else P[k] = /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : def;
+    });
+    P.W = Math.max(64, Math.min(8192, Math.round(P.W)));
+    P.H = Math.max(64, Math.min(8192, Math.round(P.H)));
+    return true;
+  } catch(e){ return false; }
+}
+async function copyLink(){
+  const url = location.origin + location.pathname + "#p=" + encodeState();
+  try {
+    await navigator.clipboard.writeText(url);
+    msg("link copied — it carries this exact look");
+  } catch(e){
+    location.hash = "p=" + encodeState();
+    msg("link is in the address bar — copy it from there");
+  }
+}
+
 /* ============================== go ============================== */
 if(draw){
   let rt = 0;
   new ResizeObserver(()=>{ clearTimeout(rt); rt = setTimeout(render, 80); }).observe(plate);
   window.addEventListener("resize", ()=>{ clearTimeout(rt); rt = setTimeout(render, 80); });
+
+  if(MOBILE.matches) P.fill = true;            // edge to edge is the point on a phone
+  const link = /[#&]p=([A-Za-z0-9_\-]+)/.exec(location.hash);
+  const fromLink = link && decodeState(link[1]);
+  if(fromLink){ activeRecipe = -1; flashCaption("Shared look"); }
+
+  setSheet(false);
+  syncAll();
   render();
   refreshThumbs();
+  if(!fromLink) startAttract();
 }
 </script>

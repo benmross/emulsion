@@ -37,6 +37,11 @@
           <div class="g controls"><span>controls</span></div>
         </div>
         <div class="busy" id="busy">rendering full size…</div>
+        <div class="viewtools" id="viewtools">
+          <button class="vbtn" id="fitBtn" aria-label="Fit or fill the screen">Fit</button>
+          <button class="vbtn" id="hideBtn" aria-label="Hide the interface">Hide</button>
+        </div>
+        <p class="caption" id="caption" aria-live="polite"><b>Limb</b><span>14 plates · tap to take over</span></p>
         <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
           <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
           <button class="hudbtn" data-act="fill">Fit</button>
@@ -62,6 +67,16 @@
   </section>
 
   <aside class="rail" id="rail">
+    <div class="peek" id="peek">
+      <button class="grab" id="grab" aria-label="Show all controls" aria-expanded="false"></button>
+      <div class="peekplates" id="peekplates"></div>
+      <div class="acts">
+        <button class="act" id="actShuffle"><span>⤮</span>Shuffle</button>
+        <button class="act" id="actSave"><span>↓</span>Save</button>
+        <button class="act" id="actShare"><span>↗</span>Share</button>
+        <button class="act primary" id="actTune"><span>≡</span>Tune</button>
+      </div>
+    </div>
     <nav class="tabs" id="tabs" role="tablist" aria-label="Control groups"></nav>
   </aside>
 </div>

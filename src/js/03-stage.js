@@ -17,7 +17,7 @@ if(!draw){
   plate.appendChild(n);
 } else {
   thumbCanvas = document.createElement("canvas");
-  thumbCanvas.width = 90; thumbCanvas.height = 120;
+  thumbCanvas.width = 96; thumbCanvas.height = 128;
   try { drawThumb = makeRenderer(thumbCanvas); } catch(e){ drawThumb = null; }
 }
 
@@ -32,10 +32,11 @@ function schedule(){
 }
 function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale, phase); }
 const COARSE = !!(window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
+const MOBILE = window.matchMedia("(max-width:980px)");
 function render(){
   if(!draw || recording) return;
   const asp = P.W / P.H;
-  const immersive = document.body.classList.contains("immersive");
+  const immersive = document.body.classList.contains("immersive") || MOBILE.matches;
   let dispW, dispH;
   if(immersive){
     // fill crops to the screen (how a wallpaper actually sits); fit shows the whole plate
@@ -105,16 +106,29 @@ function msg(text){
   msgTimer = setTimeout(()=>{ stMsg.textContent=""; }, 5000);
 }
 
-/* thumbnails reflect the current palette + grain, so the picker reads as a contact sheet */
-let thumbTimer = 0;
+/* Every picker is a contact sheet rendered in the user's own palette, so the
+   shapes preview the current plate and the plates preview the current colours. */
+let thumbTimer = 0, plateSig = "";
+const TW = 96, TH = 128;
 function refreshThumbs(){
   if(!drawThumb) return;
   clearTimeout(thumbTimer);
   thumbTimer = setTimeout(()=>{
+    const ps = TW / P.W;
     document.querySelectorAll(".shapes img").forEach((img,i)=>{
-      const q = Object.assign({}, P, {shape:i, W:90, H:120});
-      drawThumb(q, 90, 120, 90/P.W);
+      drawThumb(Object.assign({}, P, {shape:i}), TW, TH, ps, 0);
       img.src = thumbCanvas.toDataURL("image/png");
+    });
+    // plate tiles only depend on colour and grain, so skip the work when neither moved
+    const sig = [P.c0,P.c1,P.c2,P.mid,P.chroma,P.grain,P.gsize,P.gdens,P.gresp,P.W,P.H].join("|");
+    if(sig === plateSig) return;
+    plateSig = sig;
+    RECIPES.forEach((r,i)=>{
+      const q = Object.assign({}, P);
+      for(const k of LOOK) q[k] = (k in r.p) ? r.p[k] : DEFAULTS[k];
+      drawThumb(q, TW, TH, ps, 0);
+      const src = thumbCanvas.toDataURL("image/png");
+      document.querySelectorAll('[data-plate="'+i+'"] img').forEach(img => { img.src = src; });
     });
   }, 200);
 }

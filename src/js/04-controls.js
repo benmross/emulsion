@@ -82,9 +82,9 @@ function segmented(host, key, options, onAfter){
 
 /* ============================== rail ============================== */
 const gRecipes = section("Recipes");
-const recipeBar = el("div","recipes",gRecipes);
-recipeBar.setAttribute("role","group");
-recipeBar.setAttribute("aria-label","Recipes");
+const platesEl = el("div","plates",gRecipes);
+platesEl.setAttribute("role","group");
+platesEl.setAttribute("aria-label","Plates");
 
 const gForm = section("Form");
 
@@ -264,6 +264,9 @@ setSel.addEventListener("change", ()=>{ P.setsize = parseInt(setSel.value,10); }
 binders.push(()=>{ setSel.value = P.setsize; });
 const setBtn = el("button","btn",setRow);
 setBtn.type="button"; setBtn.textContent="Export set";
+
+const linkBtn = el("button","btn wide",gOut);
+linkBtn.type="button"; linkBtn.textContent="Copy link to this look";
 
 const hint = el("p","hint",gOut.parentElement);
 hint.innerHTML = 'Grain is measured in <em>output</em> pixels — the preview scales it to match, so a 1&nbsp;px grain stays 1&nbsp;px in the export. <b>Export set</b> writes a batch of seeds for an iPhone Photo&nbsp;Shuffle album; <b>Record loop</b> writes a video for a Live&nbsp;Photo lock screen. Press <kbd>R</kbd> to reshuffle.';
