@@ -23,6 +23,7 @@ function makeRenderer(canvas){
   if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
   gl.useProgram(prog);
   const va = gl.createVertexArray(); gl.bindVertexArray(va);
+  const warned = {};
   const loc = {}, U = n => (loc[n] !== undefined ? loc[n] : (loc[n]=gl.getUniformLocation(prog,n)));
 
   return function draw(p, w, h, ps, phase){
@@ -36,7 +37,13 @@ function makeRenderer(canvas){
     gl.uniform1i(U("uTex"), p.tex|0);
     gl.uniform1i(U("uInvert"), p.invert?1:0);
     gl.uniform1i(U("uChroma"), p.chroma?1:0);
-    const f = (n,v)=>gl.uniform1f(U(n), v);
+    const f = (n,v)=>{
+      if(!Number.isFinite(v)){
+        if(!warned[n]){ warned[n]=1; console.warn("Emulsion: uniform "+n+" got "+v+" — check DEFAULTS"); }
+        v = 0;
+      }
+      gl.uniform1f(U(n), v);
+    };
     f("uScale",p.scale); f("uAngle",p.angle); f("uSoft",p.soft); f("uWarp",p.warp);
     f("uDetail",p.detail); f("uMottle",p.mottle); f("uPosX",p.posx); f("uPosY",p.posy);
     f("uExp",p.exposure); f("uCon",p.contrast); f("uBlack",p.black); f("uGam",p.gamma); f("uVig",p.vignette);

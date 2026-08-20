@@ -458,7 +458,7 @@ const DEFAULTS = {
   shape:0, scale:1.00, angle:0, soft:.30, warp:.45, detail:3.4, mottle:.35, posx:-.05, posy:0,
   bands:2, blur:0, streak:0, streakang:0,
   exposure:.05, contrast:1.35, black:.05, gamma:1, vignette:.35, gloss:0,
-  c0:"#000000", c1:"#6E7076", c2:"#F2F2F0",  invert:false,
+  c0:"#000000", c1:"#6E7076", c2:"#F2F2F0", mid:.5, invert:false,
   grain:.16, gsize:1.3, gdens:.9, gresp:.75, chroma:false,
   tex:0, texamt:.35, texscale:1,
   animate:false, flow:.35, looplen:4, fps:30, fill:false,
@@ -791,6 +791,7 @@ function makeRenderer(canvas){
   if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
   gl.useProgram(prog);
   const va = gl.createVertexArray(); gl.bindVertexArray(va);
+  const warned = {};
   const loc = {}, U = n => (loc[n] !== undefined ? loc[n] : (loc[n]=gl.getUniformLocation(prog,n)));
 
   return function draw(p, w, h, ps, phase){
@@ -804,7 +805,13 @@ function makeRenderer(canvas){
     gl.uniform1i(U("uTex"), p.tex|0);
     gl.uniform1i(U("uInvert"), p.invert?1:0);
     gl.uniform1i(U("uChroma"), p.chroma?1:0);
-    const f = (n,v)=>gl.uniform1f(U(n), v);
+    const f = (n,v)=>{
+      if(!Number.isFinite(v)){
+        if(!warned[n]){ warned[n]=1; console.warn("Emulsion: uniform "+n+" got "+v+" — check DEFAULTS"); }
+        v = 0;
+      }
+      gl.uniform1f(U(n), v);
+    };
     f("uScale",p.scale); f("uAngle",p.angle); f("uSoft",p.soft); f("uWarp",p.warp);
     f("uDetail",p.detail); f("uMottle",p.mottle); f("uPosX",p.posx); f("uPosY",p.posy);
     f("uExp",p.exposure); f("uCon",p.contrast); f("uBlack",p.black); f("uGam",p.gamma); f("uVig",p.vignette);

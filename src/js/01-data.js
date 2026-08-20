@@ -3,7 +3,7 @@ const DEFAULTS = {
   shape:0, scale:1.00, angle:0, soft:.30, warp:.45, detail:3.4, mottle:.35, posx:-.05, posy:0,
   bands:2, blur:0, streak:0, streakang:0,
   exposure:.05, contrast:1.35, black:.05, gamma:1, vignette:.35, gloss:0,
-  c0:"#000000", c1:"#6E7076", c2:"#F2F2F0",  invert:false,
+  c0:"#000000", c1:"#6E7076", c2:"#F2F2F0", mid:.5, invert:false,
   grain:.16, gsize:1.3, gdens:.9, gresp:.75, chroma:false,
   tex:0, texamt:.35, texscale:1,
   animate:false, flow:.35, looplen:4, fps:30, fill:false,
