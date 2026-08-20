@@ -1,5 +1,5 @@
 /* ============================== recipes, shuffle, export ============================== */
-const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize"];
+const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize","fill"];
 const FORM_BASE = {};
 for(const k in DEFAULTS) if(KEEP.indexOf(k)<0) FORM_BASE[k] = DEFAULTS[k];
 
@@ -42,8 +42,73 @@ function shuffle(){
 
 document.addEventListener("keydown", e=>{
   const t = e.target;
+  if(e.key==="Escape" && document.body.classList.contains("immersive")){ exitImmersive(); return; }
   if(t && (t.tagName==="INPUT" || t.tagName==="SELECT" || t.isContentEditable)) return;
   if(e.key==="r" || e.key==="R"){ e.preventDefault(); shuffle(); }
+  if(e.key==="f" || e.key==="F"){ e.preventDefault(); toggleImmersive(); }
+});
+
+/* ---------- fullscreen preview ----------
+   Real fullscreen where the browser allows it; otherwise the same thing done
+   with CSS, which is the only route on iPhone (Safari refuses requestFullscreen
+   on anything but a <video>) and inside a sandboxed frame. */
+const hud = document.getElementById("hud");
+const immerseBtn = document.getElementById("immerse");
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+
+function enterImmersive(){
+  if(document.body.classList.contains("immersive")) return;
+  document.body.classList.add("immersive");
+  document.body.classList.remove("hud-off");
+  const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+  if(req){
+    try {
+      const r = req.call(frame, {navigationUI:"hide"});
+      if(r && r.catch) r.catch(()=>{});
+    } catch(e){ /* CSS mode carries it */ }
+  }
+  syncHud(); render();
+}
+function exitImmersive(){
+  if(!document.body.classList.contains("immersive")) return;
+  document.body.classList.remove("immersive","hud-off");
+  if(fsEl()){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if(exit){ try { const r = exit.call(document); if(r && r.catch) r.catch(()=>{}); } catch(e){} }
+  }
+  render();
+}
+function toggleImmersive(){
+  document.body.classList.contains("immersive") ? exitImmersive() : enterImmersive();
+}
+immerseBtn.addEventListener("click", toggleImmersive);
+document.addEventListener("fullscreenchange", ()=>{ if(!fsEl()) exitImmersive(); else render(); });
+
+/* a tap on the plate opens it full-bleed on touch devices, and hides the HUD once there */
+canvas.addEventListener("click", ()=>{
+  if(document.body.classList.contains("immersive")) document.body.classList.toggle("hud-off");
+  else if(COARSE) enterImmersive();
+});
+
+function syncHud(){
+  const fill = hud.querySelector('[data-act="fill"]');
+  const play = hud.querySelector('[data-act="animate"]');
+  fill.textContent = P.fill ? "Fill" : "Fit";
+  fill.classList.toggle("on", !!P.fill);
+  play.textContent = P.animate ? "Pause" : "Play";
+  play.classList.toggle("on", !!P.animate);
+}
+binders.push(syncHud);
+hud.addEventListener("click", e=>{
+  const b = e.target.closest("[data-act]");
+  if(!b) return;
+  e.stopPropagation();
+  const act = b.dataset.act;
+  if(act === "close")   exitImmersive();
+  if(act === "fill"){   P.fill = !P.fill; syncHud(); render(); }
+  if(act === "animate"){ setAnimating(!P.animate); syncAll(); }
+  if(act === "shuffle") shuffle();
+  if(act === "export")  exportStill();
 });
 
 const MIME = {png:"image/png", webp:"image/webp", jpeg:"image/jpeg"};
@@ -78,7 +143,8 @@ async function saveBlob(blob, filename){
   return "saved";
 }
 let exporting = false;
-document.getElementById("export").addEventListener("click", async ()=>{
+document.getElementById("export").addEventListener("click", exportStill);
+async function exportStill(){
   if(!draw || exporting) return;
   exporting = true; recording = true;
   busy.textContent = "rendering full size…";
@@ -106,7 +172,7 @@ document.getElementById("export").addEventListener("click", async ()=>{
     exporting = false; recording = false;
     render();
   }
-});
+}
 
 /* ---------- a set of stills, for Photo Shuffle ---------- */
 setBtn.addEventListener("click", async ()=>{

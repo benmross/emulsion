@@ -31,17 +31,29 @@ function schedule(){
   rafId = requestAnimationFrame(()=>{ rafId = 0; render(); });
 }
 function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale, phase); }
+const COARSE = !!(window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
 function render(){
   if(!draw || recording) return;
-  const box = plate.getBoundingClientRect();
-  const availW = Math.max(120, box.width  - 52);
-  const availH = Math.max(120, box.height - 52);
   const asp = P.W / P.H;
-  let dispW = Math.min(availW, availH*asp);
-  let dispH = dispW / asp;
+  const immersive = document.body.classList.contains("immersive");
+  let dispW, dispH;
+  if(immersive){
+    // fill crops to the screen (how a wallpaper actually sits); fit shows the whole plate
+    const vw = window.innerWidth, vh = window.innerHeight;
+    dispW = P.fill ? Math.max(vw, vh*asp) : Math.min(vw, vh*asp);
+    dispH = dispW / asp;
+  } else {
+    const box = plate.getBoundingClientRect();
+    const pad = COARSE ? 22 : 52;
+    const availW = Math.max(120, box.width  - pad);
+    const availH = Math.max(120, box.height - pad);
+    dispW = Math.min(availW, availH*asp);
+    dispH = dispW / asp;
+  }
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   rw = Math.round(dispW*dpr); rh = Math.round(dispH*dpr);
-  const cap = P.blur > 0.02 ? 1.3e6 : 2.6e6;
+  const cap = COARSE ? (P.blur > 0.02 ? 0.8e6 : 1.7e6)
+                     : (P.blur > 0.02 ? 1.3e6 : 2.6e6);
   if(rw*rh > cap){ const k = Math.sqrt(cap/(rw*rh)); rw = Math.round(rw*k); rh = Math.round(rh*k); }
   if(rw > P.W){ rw = P.W; rh = P.H; }
   previewScale = rw / P.W;

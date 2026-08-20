@@ -1,4 +1,7 @@
 <title>Emulsion</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#08090A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -103,6 +106,8 @@ button,input,select{font:inherit;color:inherit}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
 }
 .btn.primary:hover{filter:brightness(1.07)}
+.btn.icon{padding:8px 9px;line-height:0}
+.btn,.chip,.tab,.hudbtn,.seg button,.switch{-webkit-tap-highlight-color:transparent}
 .btn kbd{
   font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--dim);
   border:1px solid var(--line);border-radius:4px;padding:1px 4px;
@@ -141,6 +146,55 @@ canvas#gl{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
   font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-txt);
 }
 .busy.on{display:grid}
+
+/* ---------- fullscreen preview ---------- */
+.hud{display:none}
+.frame{touch-action:manipulation}
+body.immersive{overflow:hidden}
+body.immersive .frame{
+  position:fixed;inset:0;z-index:200;max-width:none;max-height:none;
+  border:0;border-radius:0;box-shadow:none;background:#000;
+  display:grid;place-items:center;overflow:hidden;
+}
+body.immersive canvas#gl{max-width:none;max-height:none}
+body.immersive .hud{
+  display:flex;gap:4px;padding:5px;z-index:210;
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(16px + env(safe-area-inset-bottom));
+  background:rgba(12,13,15,.74);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.09);border-radius:999px;
+  box-shadow:0 12px 30px -12px #000;
+  transition:opacity .18s ease, transform .18s ease;
+}
+body.immersive.hud-off .hud{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(12px)}
+.hudbtn{
+  border:0;background:transparent;color:var(--text);cursor:pointer;
+  min-height:38px;padding:0 13px;border-radius:999px;font-size:12.5px;
+}
+.hudbtn:hover{background:rgba(255,255,255,.08)}
+.hudbtn.on{background:var(--gold-soft);color:var(--gold-txt)}
+.hudbtn.close{font-size:14px;padding:0 12px}
+
+/* ---------- control-group tabs (mobile) ---------- */
+.tabs{
+  display:none;position:sticky;top:0;z-index:3;gap:6px;
+  padding:10px 12px;overflow-x:auto;scrollbar-width:none;
+  background:var(--panel);border-bottom:1px solid var(--line-soft);
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  position:relative;flex:0 0 auto;cursor:pointer;
+  border:1px solid var(--line);background:#0C0D0F;color:var(--mute);
+  padding:9px 14px;border-radius:999px;font-size:13px;
+}
+.tab[aria-selected="true"]{background:var(--gold-soft);border-color:transparent;color:var(--gold-txt)}
+.tab[aria-selected="true"]::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:var(--gold-grad);opacity:.8;pointer-events:none;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+}
 
 /* ---------- status ---------- */
 .status{
@@ -265,13 +319,59 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
 .nogl{max-width:38ch;margin:auto;text-align:center;color:var(--mute);line-height:1.6;font-size:13px}
 
 @media (max-width:980px){
-  html,body{overflow:auto}
-  .app{grid-template-columns:1fr;height:auto}
-  .stage{position:sticky;top:0;z-index:5;height:66dvh}
-  .rail{border-left:0;border-top:1px solid var(--line-soft)}
-  .plate{padding:14px}
-  .topbar{flex-wrap:wrap;gap:10px;padding:10px 14px}
-  .recipes{order:3;width:100%;flex-basis:100%}
+  /* one column: preview on top, a control sheet under it — neither scrolls the page */
+  .app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+  .stage{min-height:0}
+  .rail{
+    border-left:0;border-top:1px solid var(--line);
+    height:min(46dvh,430px);border-radius:14px 14px 0 0;
+    box-shadow:0 -20px 44px -26px #000;
+    padding-bottom:calc(20px + env(safe-area-inset-bottom));
+  }
+  .tabs{display:flex}
+
+  /* one group at a time — the tab names it, so the heading goes */
+  .sec{display:none;padding:14px 14px 22px}
+  .sec.on{display:block}
+  .sec > h2{display:none}
+  .stack{gap:19px}
+
+  .topbar{gap:10px;padding:10px 12px}
+  .mark h1{font-size:15px}
+  .rule,.now i,#shuffle kbd{display:none}
+  .now{font-size:10px;letter-spacing:.12em}
+  .plate{padding:10px;background-size:32px 32px}
+  .status{gap:10px;padding:7px 12px;font-size:10px}
+  .status .hide-sm{display:none}
+
+  /* touch targets */
+  .btn{padding:11px 13px;min-height:44px}
+  .btn.icon{padding:11px 12px}
+  .btn.wide{min-height:48px}
+  .row label{font-size:14px}
+  .row .val{font-size:12.5px}
+  input[type=range]{height:36px;touch-action:none}
+  input[type=range]::-webkit-slider-runnable-track{height:5px}
+  input[type=range]::-moz-range-track{height:5px}
+  input[type=range]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-8.5px}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px}
+  .chip{padding:10px 14px;font-size:13px}
+  .seg button{padding:11px 4px;font-size:12.5px}
+  .switch{width:46px;height:26px}
+  .switch::after{width:20px;height:20px}
+  .switch[aria-pressed="true"]::after{transform:translateX(20px)}
+  .shapes{gap:8px}
+  .sw{height:40px}
+  .pal{padding:7px 11px 7px 7px;font-size:12.5px}
+  /* 16px keeps iOS from zooming the page on focus */
+  .field input,select.sel{padding:12px 10px;font-size:16px}
+  .dims .x{padding-top:20px}
+  .hint{font-size:12px}
+}
+@media (max-width:420px){
+  .mark h1{font-size:14px}
+  .now{display:none}
+  .btn{padding:10px 11px;font-size:12.5px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -286,6 +386,11 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
       <span class="rule" aria-hidden="true"></span>
       <p class="now" id="nowName"><i>plate</i> <b>Limb</b></p>
       <div class="tools">
+        <button class="btn icon" id="immerse" title="Fullscreen preview" aria-label="Fullscreen preview">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 1.8H1.8V6M10 1.8h4.2V6M6 14.2H1.8V10M10 14.2h4.2V10"/>
+          </svg>
+        </button>
         <button class="btn" id="shuffle" title="Reshuffle the form and seed">Shuffle <kbd>R</kbd></button>
         <button class="btn primary" id="export">Export</button>
       </div>
@@ -301,16 +406,23 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
           <div class="g controls"><span>controls</span></div>
         </div>
         <div class="busy" id="busy">rendering full size…</div>
+        <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
+          <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
+          <button class="hudbtn" data-act="fill">Fit</button>
+          <button class="hudbtn" data-act="animate">Play</button>
+          <button class="hudbtn" data-act="shuffle">Shuffle</button>
+          <button class="hudbtn" data-act="export">Export</button>
+        </div>
       </div>
     </div>
 
     <footer class="status">
       <span><b id="stOut">—</b> output</span>
       <span class="sep">/</span>
-      <span><b id="stMp">—</b> megapixels</span>
-      <span class="sep">/</span>
-      <span>preview <b id="stPrev">—</b></span>
-      <span class="sep">/</span>
+      <span class="hide-sm"><b id="stMp">—</b> megapixels</span>
+      <span class="sep hide-sm">/</span>
+      <span class="hide-sm">preview <b id="stPrev">—</b></span>
+      <span class="sep hide-sm">/</span>
       <span>seed <b id="stSeed">—</b></span>
       <span class="sep">/</span>
       <span><b id="stFps">still</b></span>
@@ -318,7 +430,9 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
     </footer>
   </section>
 
-  <aside class="rail" id="rail"></aside>
+  <aside class="rail" id="rail">
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Control groups"></nav>
+  </aside>
 </div>
 
 <script>
@@ -332,7 +446,7 @@ const DEFAULTS = {
   c0:"#000000", c1:"#6E7076", c2:"#F2F2F0", mid:.5, invert:false,
   grain:.16, gsize:1.3, gdens:.9, gresp:.75, chroma:false,
   tex:0, texamt:.35, texscale:1,
-  animate:false, flow:.35, looplen:4,
+  animate:false, flow:.35, looplen:4, fill:false,
   W:1206, H:2622, seed:.37, fmt:"png", guides:false, setsize:6
 };
 const P = Object.assign({}, DEFAULTS);
@@ -689,17 +803,29 @@ function schedule(){
   rafId = requestAnimationFrame(()=>{ rafId = 0; render(); });
 }
 function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale, phase); }
+const COARSE = !!(window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
 function render(){
   if(!draw || recording) return;
-  const box = plate.getBoundingClientRect();
-  const availW = Math.max(120, box.width  - 52);
-  const availH = Math.max(120, box.height - 52);
   const asp = P.W / P.H;
-  let dispW = Math.min(availW, availH*asp);
-  let dispH = dispW / asp;
+  const immersive = document.body.classList.contains("immersive");
+  let dispW, dispH;
+  if(immersive){
+    // fill crops to the screen (how a wallpaper actually sits); fit shows the whole plate
+    const vw = window.innerWidth, vh = window.innerHeight;
+    dispW = P.fill ? Math.max(vw, vh*asp) : Math.min(vw, vh*asp);
+    dispH = dispW / asp;
+  } else {
+    const box = plate.getBoundingClientRect();
+    const pad = COARSE ? 22 : 52;
+    const availW = Math.max(120, box.width  - pad);
+    const availH = Math.max(120, box.height - pad);
+    dispW = Math.min(availW, availH*asp);
+    dispH = dispW / asp;
+  }
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   rw = Math.round(dispW*dpr); rh = Math.round(dispH*dpr);
-  const cap = P.blur > 0.02 ? 1.3e6 : 2.6e6;
+  const cap = COARSE ? (P.blur > 0.02 ? 0.8e6 : 1.7e6)
+                     : (P.blur > 0.02 ? 1.3e6 : 2.6e6);
   if(rw*rh > cap){ const k = Math.sqrt(cap/(rw*rh)); rw = Math.round(rw*k); rh = Math.round(rh*k); }
   if(rw > P.W){ rw = P.W; rh = P.H; }
   previewScale = rw / P.W;
@@ -772,8 +898,11 @@ function el(tag, cls, parent){
   if(parent) parent.appendChild(n);
   return n;
 }
+const SECTIONS = [];
 function section(title){
   const s = el("section","sec",rail);
+  s.dataset.sec = title;
+  SECTIONS.push(s);
   el("h2",null,s).textContent = title;
   return el("div","stack",s);
 }
@@ -991,8 +1120,25 @@ setBtn.type="button"; setBtn.textContent="Export set";
 const hint = el("p","hint",gOut.parentElement);
 hint.innerHTML = 'Grain is measured in <em>output</em> pixels — the preview scales it to match, so a 1&nbsp;px grain stays 1&nbsp;px in the export. <b>Export set</b> writes a batch of seeds for an iPhone Photo&nbsp;Shuffle album; <b>Record loop</b> writes a video for a Live&nbsp;Photo lock screen. Press <kbd>R</kbd> to reshuffle.';
 
+/* ---------- one group at a time on small screens ---------- */
+const tabsEl = document.getElementById("tabs");
+SECTIONS.forEach((sec,i)=>{
+  const b = el("button","tab",tabsEl);
+  b.type="button"; b.textContent = sec.dataset.sec;
+  b.setAttribute("role","tab");
+  b.addEventListener("click", ()=> setTab(i));
+});
+function setTab(i){
+  SECTIONS.forEach((s,n)=> s.classList.toggle("on", n===i));
+  tabsEl.querySelectorAll(".tab").forEach((b,n)=> b.setAttribute("aria-selected", n===i ? "true":"false"));
+  const active = tabsEl.querySelector('.tab[aria-selected="true"]');
+  if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"nearest"});
+  rail.scrollTop = 0;
+}
+setTab(0);
+
 /* ============================== recipes, shuffle, export ============================== */
-const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize"];
+const KEEP = ["W","H","seed","fmt","c0","c1","c2","animate","guides","setsize","fill"];
 const FORM_BASE = {};
 for(const k in DEFAULTS) if(KEEP.indexOf(k)<0) FORM_BASE[k] = DEFAULTS[k];
 
@@ -1035,8 +1181,73 @@ function shuffle(){
 
 document.addEventListener("keydown", e=>{
   const t = e.target;
+  if(e.key==="Escape" && document.body.classList.contains("immersive")){ exitImmersive(); return; }
   if(t && (t.tagName==="INPUT" || t.tagName==="SELECT" || t.isContentEditable)) return;
   if(e.key==="r" || e.key==="R"){ e.preventDefault(); shuffle(); }
+  if(e.key==="f" || e.key==="F"){ e.preventDefault(); toggleImmersive(); }
+});
+
+/* ---------- fullscreen preview ----------
+   Real fullscreen where the browser allows it; otherwise the same thing done
+   with CSS, which is the only route on iPhone (Safari refuses requestFullscreen
+   on anything but a <video>) and inside a sandboxed frame. */
+const hud = document.getElementById("hud");
+const immerseBtn = document.getElementById("immerse");
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+
+function enterImmersive(){
+  if(document.body.classList.contains("immersive")) return;
+  document.body.classList.add("immersive");
+  document.body.classList.remove("hud-off");
+  const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+  if(req){
+    try {
+      const r = req.call(frame, {navigationUI:"hide"});
+      if(r && r.catch) r.catch(()=>{});
+    } catch(e){ /* CSS mode carries it */ }
+  }
+  syncHud(); render();
+}
+function exitImmersive(){
+  if(!document.body.classList.contains("immersive")) return;
+  document.body.classList.remove("immersive","hud-off");
+  if(fsEl()){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if(exit){ try { const r = exit.call(document); if(r && r.catch) r.catch(()=>{}); } catch(e){} }
+  }
+  render();
+}
+function toggleImmersive(){
+  document.body.classList.contains("immersive") ? exitImmersive() : enterImmersive();
+}
+immerseBtn.addEventListener("click", toggleImmersive);
+document.addEventListener("fullscreenchange", ()=>{ if(!fsEl()) exitImmersive(); else render(); });
+
+/* a tap on the plate opens it full-bleed on touch devices, and hides the HUD once there */
+canvas.addEventListener("click", ()=>{
+  if(document.body.classList.contains("immersive")) document.body.classList.toggle("hud-off");
+  else if(COARSE) enterImmersive();
+});
+
+function syncHud(){
+  const fill = hud.querySelector('[data-act="fill"]');
+  const play = hud.querySelector('[data-act="animate"]');
+  fill.textContent = P.fill ? "Fill" : "Fit";
+  fill.classList.toggle("on", !!P.fill);
+  play.textContent = P.animate ? "Pause" : "Play";
+  play.classList.toggle("on", !!P.animate);
+}
+binders.push(syncHud);
+hud.addEventListener("click", e=>{
+  const b = e.target.closest("[data-act]");
+  if(!b) return;
+  e.stopPropagation();
+  const act = b.dataset.act;
+  if(act === "close")   exitImmersive();
+  if(act === "fill"){   P.fill = !P.fill; syncHud(); render(); }
+  if(act === "animate"){ setAnimating(!P.animate); syncAll(); }
+  if(act === "shuffle") shuffle();
+  if(act === "export")  exportStill();
 });
 
 const MIME = {png:"image/png", webp:"image/webp", jpeg:"image/jpeg"};
@@ -1071,7 +1282,8 @@ async function saveBlob(blob, filename){
   return "saved";
 }
 let exporting = false;
-document.getElementById("export").addEventListener("click", async ()=>{
+document.getElementById("export").addEventListener("click", exportStill);
+async function exportStill(){
   if(!draw || exporting) return;
   exporting = true; recording = true;
   busy.textContent = "rendering full size…";
@@ -1099,7 +1311,7 @@ document.getElementById("export").addEventListener("click", async ()=>{
     exporting = false; recording = false;
     render();
   }
-});
+}
 
 /* ---------- a set of stills, for Photo Shuffle ---------- */
 setBtn.addEventListener("click", async ()=>{

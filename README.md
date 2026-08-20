@@ -49,6 +49,21 @@ Fourteen presets, each setting the full form/tone/grain stack:
 Presets cover iPhone 16 Pro (1206 × 2622) and Pro Max, common phone and desktop
 sizes, and a 4:5 print ratio; any custom size works too.
 
+## On a phone
+
+The layout switches to a preview over a tabbed control sheet — one group at a
+time instead of one long scroll — with touch-sized sliders that will not drag
+the sheet out from under you.
+
+Tap the preview (or the fullscreen button, or `F` on a keyboard) for a
+full-bleed view: the plate fills the screen with a floating bar for
+fit/fill, play, shuffle, and export, and a second tap hides even that. It uses
+the Fullscreen API where the browser allows it and falls back to a CSS
+full-bleed mode where it does not — which is every iPhone, since Safari refuses
+`requestFullscreen` on anything but a `<video>`. **Fill** crops the plate to the
+screen, showing exactly how it will sit as a wallpaper; **Fit** shows the whole
+frame.
+
 ## Wallpapers on iOS
 
 iOS has no third-party live-wallpaper API — motion is possible only on the Lock

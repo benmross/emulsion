@@ -1,4 +1,7 @@
 <title>Emulsion</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#08090A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -14,6 +17,11 @@
       <span class="rule" aria-hidden="true"></span>
       <p class="now" id="nowName"><i>plate</i> <b>Limb</b></p>
       <div class="tools">
+        <button class="btn icon" id="immerse" title="Fullscreen preview" aria-label="Fullscreen preview">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 1.8H1.8V6M10 1.8h4.2V6M6 14.2H1.8V10M10 14.2h4.2V10"/>
+          </svg>
+        </button>
         <button class="btn" id="shuffle" title="Reshuffle the form and seed">Shuffle <kbd>R</kbd></button>
         <button class="btn primary" id="export">Export</button>
       </div>
@@ -29,16 +37,23 @@
           <div class="g controls"><span>controls</span></div>
         </div>
         <div class="busy" id="busy">rendering full size…</div>
+        <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
+          <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
+          <button class="hudbtn" data-act="fill">Fit</button>
+          <button class="hudbtn" data-act="animate">Play</button>
+          <button class="hudbtn" data-act="shuffle">Shuffle</button>
+          <button class="hudbtn" data-act="export">Export</button>
+        </div>
       </div>
     </div>
 
     <footer class="status">
       <span><b id="stOut">—</b> output</span>
       <span class="sep">/</span>
-      <span><b id="stMp">—</b> megapixels</span>
-      <span class="sep">/</span>
-      <span>preview <b id="stPrev">—</b></span>
-      <span class="sep">/</span>
+      <span class="hide-sm"><b id="stMp">—</b> megapixels</span>
+      <span class="sep hide-sm">/</span>
+      <span class="hide-sm">preview <b id="stPrev">—</b></span>
+      <span class="sep hide-sm">/</span>
       <span>seed <b id="stSeed">—</b></span>
       <span class="sep">/</span>
       <span><b id="stFps">still</b></span>
@@ -46,7 +61,9 @@
     </footer>
   </section>
 
-  <aside class="rail" id="rail"></aside>
+  <aside class="rail" id="rail">
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Control groups"></nav>
+  </aside>
 </div>
 
 <!-- @app -->

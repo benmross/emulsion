@@ -5,8 +5,11 @@ function el(tag, cls, parent){
   if(parent) parent.appendChild(n);
   return n;
 }
+const SECTIONS = [];
 function section(title){
   const s = el("section","sec",rail);
+  s.dataset.sec = title;
+  SECTIONS.push(s);
   el("h2",null,s).textContent = title;
   return el("div","stack",s);
 }
@@ -223,3 +226,20 @@ setBtn.type="button"; setBtn.textContent="Export set";
 
 const hint = el("p","hint",gOut.parentElement);
 hint.innerHTML = 'Grain is measured in <em>output</em> pixels — the preview scales it to match, so a 1&nbsp;px grain stays 1&nbsp;px in the export. <b>Export set</b> writes a batch of seeds for an iPhone Photo&nbsp;Shuffle album; <b>Record loop</b> writes a video for a Live&nbsp;Photo lock screen. Press <kbd>R</kbd> to reshuffle.';
+
+/* ---------- one group at a time on small screens ---------- */
+const tabsEl = document.getElementById("tabs");
+SECTIONS.forEach((sec,i)=>{
+  const b = el("button","tab",tabsEl);
+  b.type="button"; b.textContent = sec.dataset.sec;
+  b.setAttribute("role","tab");
+  b.addEventListener("click", ()=> setTab(i));
+});
+function setTab(i){
+  SECTIONS.forEach((s,n)=> s.classList.toggle("on", n===i));
+  tabsEl.querySelectorAll(".tab").forEach((b,n)=> b.setAttribute("aria-selected", n===i ? "true":"false"));
+  const active = tabsEl.querySelector('.tab[aria-selected="true"]');
+  if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"nearest"});
+  rail.scrollTop = 0;
+}
+setTab(0);
