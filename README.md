@@ -62,7 +62,9 @@ The plate *is* the page: it fills the screen edge to edge, and everything else
 floats over it and can be dismissed. Tapping the plate hides the entire
 interface for a clean look at the wallpaper; tapping again brings it back.
 
-A bottom sheet peeks with a scrollable strip of plate thumbnails — each one
+The sheet handle drags: pull up for the full controls, down to collapse them,
+down again to clear the interface off the plate. A bottom sheet peeks with a
+scrollable strip of plate thumbnails — each one
 rendered live in your current palette, so you are picking from pictures rather
 than from fourteen identical words — over four actions: **Shuffle**, **Save**,
 **Share**, and **Tune**, which slides the full tabbed controls up over the
@@ -70,8 +72,15 @@ image. **Share** hands the rendered PNG to the OS share sheet, which on iOS is
 the shortest path into Photos. **Fill** crops the plate to the screen the way a
 wallpaper actually sits; **Fit** shows the whole frame.
 
-On arrival the page cycles through every plate, naming each one, until you
-touch it — so the range is visible before you know there are any controls.
+On arrival the page walks the plates in order — the same order as the strip,
+so the row reads as a filmstrip — naming each one until you touch it, so the
+range is visible before you know there are any controls.
+
+iOS tints the strip behind the clock with the page's theme colour, so the app
+samples the top of the plate after each change and hands that colour over,
+which stops the band reading as a black bar. **Add to Home Screen** goes
+further: launched from there it runs with a translucent status bar and the
+plate really does reach the top of the screen.
 
 **Copy link to this look** (in Output) encodes the entire plate — form, optics,
 tone, palette, grain, size, seed — into the URL, so a look can be sent to

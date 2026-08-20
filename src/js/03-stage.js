@@ -63,6 +63,7 @@ function render(){
   rw = Math.max(rw,2); rh = Math.max(rh,2);
   paint();
   updateStatus();
+  if(typeof updateThemeColor === "function") updateThemeColor();
 }
 function updateStatus(){
   document.getElementById("stOut").textContent  = P.W+" × "+P.H;

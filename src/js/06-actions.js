@@ -52,14 +52,13 @@ function flashCaption(name){
 let attractTimer = 0, attractStep = 0, attractOrder = [];
 function startAttract(){
   if(!draw || /[#&]p=/.test(location.hash)) return;
-  attractOrder = RECIPES.map((_,i)=>i).sort(()=> Math.random()-0.5);
+  attractOrder = RECIPES.map((_,i)=>i);   // in strip order, so the row reads as a filmstrip
   document.body.classList.add("attracting");
   const tick = ()=>{
     if(attractStep >= attractOrder.length){ stopAttract(); return; }
     const i = attractOrder[attractStep++];
     applyRecipe(RECIPES[i]);
     activeRecipe = i;
-    P.seed = Math.round(Math.random()*9999)/10000;
     syncRecipes(); syncAll(); render();
     caption.querySelector("b").textContent = RECIPES[i].name;
     document.body.classList.remove("captioning");
@@ -435,7 +434,44 @@ function setSheet(open){
   actTune.lastChild.nodeValue = open ? "Close" : "Tune";
 }
 function toggleSheet(){ setSheet(!document.body.classList.contains("sheet-open")); }
-grab.addEventListener("click", toggleSheet);
+
+/* Drag the handle: up opens the controls, down collapses them, and down again
+   from the peek state clears the interface off the plate. */
+let dragFrom = null, dragDy = 0, swallowClick = false;
+grab.addEventListener("pointerdown", e=>{
+  if(!MOBILE.matches) return;
+  dragFrom = e.clientY; dragDy = 0;
+  rail.style.transition = "none";
+  if(grab.setPointerCapture) grab.setPointerCapture(e.pointerId);
+});
+grab.addEventListener("pointermove", e=>{
+  if(dragFrom === null) return;
+  dragDy = e.clientY - dragFrom;
+  const open = document.body.classList.contains("sheet-open");
+  let t = dragDy;
+  if(open && t < 0) t = t / 5;                    // already as far up as it goes
+  if(!open && t < 0) t = Math.max(t, -170);       // peeking at the panel above
+  rail.style.transform = "translateY(" + t + "px)";
+});
+function endDrag(){
+  if(dragFrom === null) return;
+  dragFrom = null;
+  rail.style.transition = "";
+  rail.style.transform = "";
+  const open = document.body.classList.contains("sheet-open");
+  if(dragDy < -44){ setSheet(true); swallowClick = true; }
+  else if(dragDy > 44){
+    if(open) setSheet(false);
+    else document.body.classList.add("ui-off");
+    swallowClick = true;
+  }
+}
+grab.addEventListener("pointerup", endDrag);
+grab.addEventListener("pointercancel", endDrag);
+grab.addEventListener("click", ()=>{
+  if(swallowClick){ swallowClick = false; return; }
+  toggleSheet();
+});
 actTune.addEventListener("click", toggleSheet);
 document.getElementById("actShuffle").addEventListener("click", ()=>{ stopAttract(); shuffle(); });
 document.getElementById("actSave").addEventListener("click", exportStill);
@@ -484,6 +520,28 @@ async function copyLink(){
     location.hash = "p=" + encodeState();
     msg("link is in the address bar — copy it from there");
   }
+}
+
+/* iOS paints the strip behind the clock with the page's theme colour, so sample
+   the top of the plate and hand it over — the band stops reading as a black bar.
+   Launched from the Home Screen the plate goes under the clock outright. */
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+const sampler = document.createElement("canvas");
+sampler.width = 1; sampler.height = 1;
+const sctx = sampler.getContext("2d", {willReadFrequently:true});
+let themeTimer = 0;
+function updateThemeColor(){
+  if(!themeMeta || !draw || P.animate) return;
+  clearTimeout(themeTimer);
+  themeTimer = setTimeout(()=>{
+    try{
+      const strip = Math.max(1, Math.round(canvas.height * 0.05));
+      sctx.drawImage(canvas, 0, 0, canvas.width, strip, 0, 0, 1, 1);
+      const d = sctx.getImageData(0,0,1,1).data;
+      const hex = "#" + [d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,"0")).join("");
+      themeMeta.setAttribute("content", hex);
+    } catch(e){ /* tainted or unavailable — leave the default */ }
+  }, 240);
 }
 
 /* ============================== go ============================== */

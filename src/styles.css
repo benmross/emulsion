@@ -314,8 +314,10 @@ body.captioning .caption b{animation:capfade .4s ease}
 /* the sheet's peek row (mobile) */
 .peek{display:none}
 .grab{
-  display:block;width:100%;padding:9px 0 7px;background:none;border:0;cursor:pointer;
+  display:block;width:100%;padding:13px 0 11px;background:none;border:0;
+  cursor:grab;touch-action:none;
 }
+.grab:active{cursor:grabbing}
 .grab::before{
   content:"";display:block;width:38px;height:4px;border-radius:99px;margin:0 auto;
   background:#3A3D43;transition:background .15s;
@@ -440,7 +442,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
 
   body.ui-off .topbar{opacity:0;transform:translateY(-10px);pointer-events:none}
   body.ui-off .viewtools{opacity:0;pointer-events:none}
-  body.ui-off .rail{transform:translateY(115%)}
+  body.ui-off .rail{transform:translateY(115%);pointer-events:none}
 
   /* bottom sheet: peek by default, full controls when opened */
   .rail{
