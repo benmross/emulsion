@@ -1,0 +1,35 @@
+name: CI
+
+# Cloudflare Pages builds and deploys from its own Git integration.
+# This workflow only guards the committed copy of the build.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: Build
+        run: node build.mjs
+
+      # dist/index.html is committed so the repo can be opened without a build.
+      # If it no longer matches src/, the commit forgot to rebuild.
+      - name: Check dist is current
+        run: |
+          if ! git diff --quiet -- dist/index.html; then
+            echo "::error::dist/index.html is stale — run 'node build.mjs' and commit the result"
+            git diff --stat -- dist/index.html
+            exit 1
+          fi
