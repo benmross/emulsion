@@ -1,0 +1,52 @@
+<title>Emulsion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- @styles -->
+
+<div class="app">
+  <section class="stage">
+    <header class="topbar">
+      <div class="mark">
+        <span class="dot" aria-hidden="true"></span>
+        <h1>Emulsion</h1>
+      </div>
+      <span class="rule" aria-hidden="true"></span>
+      <p class="now" id="nowName"><i>plate</i> <b>Limb</b></p>
+      <div class="tools">
+        <button class="btn" id="shuffle" title="Reshuffle the form and seed">Shuffle <kbd>R</kbd></button>
+        <button class="btn primary" id="export">Export</button>
+      </div>
+    </header>
+
+    <div class="plate">
+      <div class="frame" id="frame">
+        <canvas id="gl" width="540" height="960"></canvas>
+        <div class="guides" id="guides" aria-hidden="true">
+          <div class="g island"></div>
+          <div class="g clock"><span>clock</span></div>
+          <div class="g widgets"><span>widgets</span></div>
+          <div class="g controls"><span>controls</span></div>
+        </div>
+        <div class="busy" id="busy">rendering full size…</div>
+      </div>
+    </div>
+
+    <footer class="status">
+      <span><b id="stOut">—</b> output</span>
+      <span class="sep">/</span>
+      <span><b id="stMp">—</b> megapixels</span>
+      <span class="sep">/</span>
+      <span>preview <b id="stPrev">—</b></span>
+      <span class="sep">/</span>
+      <span>seed <b id="stSeed">—</b></span>
+      <span class="sep">/</span>
+      <span><b id="stFps">still</b></span>
+      <span class="msg" id="stMsg"></span>
+    </footer>
+  </section>
+
+  <aside class="rail" id="rail"></aside>
+</div>
+
+<!-- @app -->
