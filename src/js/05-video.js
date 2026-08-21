@@ -130,6 +130,7 @@ async function encodeLoopMP4(p, {fps, seconds, onProgress}){
   const config = await pickAvcConfig(width, height, bitrate, fps);
   if(!config) return null;
 
+  const surface = makeExportSurface(width,height);
   const samples = [];
   let description = null, failed = null;
   const encoder = new VideoEncoder({
@@ -143,26 +144,25 @@ async function encodeLoopMP4(p, {fps, seconds, onProgress}){
     },
     error: e => { failed = e; }
   });
-  encoder.configure(config);
-
-  const frameDur = Math.round(1e6 / fps);
-  const gop = Math.max(1, Math.round(fps * 2));
-  for(let i = 0; i < total && !failed; i++){
-    draw(p, width, height, 1, (i / total) * Math.PI * 2);
-    const frame = new VideoFrame(canvas, {timestamp: Math.round(i * 1e6 / fps), duration: frameDur});
-    encoder.encode(frame, {keyFrame: i % gop === 0});
-    frame.close();
-    if(onProgress) onProgress(i + 1, total);
-    // yield so the overlay repaints, and let the encoder drain if it falls behind
-    await new Promise(r => setTimeout(r, 0));
-    while(encoder.encodeQueueSize > 6 && !failed){
-      await new Promise(r => setTimeout(r, 8));
+  try{
+    encoder.configure(config);
+    const frameDur = Math.round(1e6 / fps);
+    const gop = Math.max(1, Math.round(fps * 2));
+    for(let i = 0; i < total && !failed; i++){
+      surface.draw(p, width, height, 1, (i / total) * Math.PI * 2);
+      const frame = new VideoFrame(surface.canvas, {timestamp: Math.round(i * 1e6 / fps), duration: frameDur});
+      try { encoder.encode(frame, {keyFrame: i % gop === 0}); }
+      finally { frame.close(); }
+      if(onProgress) onProgress(i + 1, total);
+      await new Promise(r => setTimeout(r, 0));
+      while(encoder.encodeQueueSize > 6 && !failed) await new Promise(r => setTimeout(r, 8));
     }
+    if(failed) throw failed;
+    await encoder.flush();
+    if(!description || !samples.length) return null;
+    return muxMP4({samples, description, width, height, fps});
+  } finally {
+    try { if(encoder.state!=="closed") encoder.close(); } catch(e){}
+    surface.dispose();
   }
-  if(failed){ try { encoder.close(); } catch(e){} throw failed; }
-
-  await encoder.flush();
-  encoder.close();
-  if(!description || !samples.length) return null;
-  return muxMP4({samples, description, width, height, fps});
 }

@@ -26,7 +26,8 @@ function makeRenderer(canvas){
   const warned = {};
   const loc = {}, U = n => (loc[n] !== undefined ? loc[n] : (loc[n]=gl.getUniformLocation(prog,n)));
 
-  return function draw(p, w, h, ps, phase){
+  const draw = function(p, w, h, ps, phase){
+    if(gl.isContextLost()) throw new Error("WebGL context was lost");
     if(canvas.width!==w || canvas.height!==h){ canvas.width=w; canvas.height=h; }
     gl.viewport(0,0,w,h);
     gl.useProgram(prog);
@@ -58,4 +59,41 @@ function makeRenderer(canvas){
     gl.uniform3fv(U("uC2"), hex2rgb(p.c2));
     gl.drawArrays(gl.TRIANGLES,0,3);
   };
+  draw.limits = {
+    texture: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+    viewport: gl.getParameter(gl.MAX_VIEWPORT_DIMS)
+  };
+  draw.dispose = ()=>{
+    const lose = gl.getExtension("WEBGL_lose_context");
+    if(lose) lose.loseContext();
+  };
+  return draw;
+}
+
+function maxExportDimensions(renderer){
+  if(!renderer || !renderer.limits) return {w:2048,h:2048};
+  return {
+    w: Math.min(8192, renderer.limits.texture, renderer.limits.viewport[0]),
+    h: Math.min(8192, renderer.limits.texture, renderer.limits.viewport[1])
+  };
+}
+
+function makeExportSurface(w,h){
+  const max = maxExportDimensions(draw);
+  if(w > max.w || h > max.h)
+    throw new Error("this device supports exports up to "+max.w+" × "+max.h);
+  const memory=Number(navigator.deviceMemory)||0;
+  const coarse=!!(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches);
+  const pixelBudget=memory&&memory<=2?16e6:(coarse?24e6:48e6);
+  if(w*h>pixelBudget)
+    throw new Error("this device's safe export limit is "+Math.round(pixelBudget/1e6)+" megapixels");
+  /* A dedicated context keeps a failed large allocation from taking the live
+     preview down with it.  The caller must dispose it when finished. */
+  const out = document.createElement("canvas");
+  out.width = Math.max(2,w); out.height = Math.max(2,h);
+  const render = makeRenderer(out);
+  if(!render) throw new Error("could not create an export renderer");
+  return {canvas:out, draw:render, dispose(){
+    render.dispose(); out.width=1; out.height=1;
+  }};
 }

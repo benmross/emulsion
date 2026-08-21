@@ -2,16 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Emulsion</title>
+<title>Emulsion — Procedural Wallpaper &amp; Grain Loop Generator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Create grainy procedural wallpapers and seamless animated loops in your browser. No uploads, accounts, or generative AI.">
+<link rel="canonical" href="https://emulsion.benmross.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Emulsion">
+<meta property="og:title" content="Emulsion — Procedural Wallpaper Generator">
+<meta property="og:description" content="Shape procedural fields, tone, color, grain, and motion, then export full-resolution stills or seamless loops.">
+<meta property="og:url" content="https://emulsion.benmross.com/">
+<meta property="og:image" content="https://emulsion.benmross.com/app.png">
+<meta property="og:image:width" content="1500">
+<meta property="og:image:height" content="807">
+<meta property="og:image:alt" content="The Emulsion interface displaying a dark liquid-chrome procedural wallpaper">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emulsion — Procedural Wallpaper Generator">
+<meta name="twitter:description" content="Create grainy procedural wallpapers and seamless loops directly in your browser.">
+<meta name="twitter:image" content="https://emulsion.benmross.com/app.png">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#08090A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Emulsion">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Emulsion","url":"https://emulsion.benmross.com/","applicationCategory":"MultimediaApplication","operatingSystem":"Any modern web browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A browser-based procedural wallpaper and seamless grain-loop generator."}</script>
 <style>
 :root{
   --ink:#08090A;
@@ -84,11 +103,8 @@ button,input,select{font:inherit;color:inherit}
 .chip[aria-pressed="true"]::after,
 .shapes button[aria-pressed="true"]::after,
 .pal[aria-pressed="true"]::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
-  background:var(--gold-grad);opacity:.8;pointer-events:none;
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid var(--gold-lo);opacity:.8;pointer-events:none;
 }
 .now{
   flex:1 1 auto;min-width:0;margin:0;display:flex;align-items:center;gap:7px;
@@ -205,13 +221,10 @@ body.immersive.hud-off .hud{opacity:0;pointer-events:none;transform:translateX(-
   border:1px solid var(--line);background:#0C0D0F;color:var(--mute);
   padding:9px 14px;border-radius:999px;font-size:13px;
 }
-.tab[aria-selected="true"]{background:var(--gold-soft);border-color:transparent;color:var(--gold-txt)}
-.tab[aria-selected="true"]::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
-  background:var(--gold-grad);opacity:.8;pointer-events:none;
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;
+.tab[aria-pressed="true"]{background:var(--gold-soft);border-color:transparent;color:var(--gold-txt)}
+.tab[aria-pressed="true"]::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid var(--gold-lo);opacity:.8;pointer-events:none;
 }
 
 /* ---------- status ---------- */
@@ -287,11 +300,8 @@ input[type=range]:hover::-moz-range-thumb{background:var(--gold-lo)}
 .plates button:hover{border-color:#3A3D43}
 .plates button[aria-pressed="true"]{border-color:transparent}
 .plates button[aria-pressed="true"]::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
-  background:var(--gold-grad);opacity:.85;pointer-events:none;
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid var(--gold-lo);opacity:.85;pointer-events:none;
 }
 .plates img{width:100%;height:100%;object-fit:cover;display:block;opacity:.94}
 .plates span{
@@ -414,7 +424,7 @@ body.captioning .caption b{animation:capfade .4s ease}
 /* size fields */
 .dims{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
 .field{display:flex;flex-direction:column;gap:5px}
-.field span{
+.field span,.field > label{
   font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
 }
 .field input,select.sel{
@@ -518,7 +528,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   .row .val{font-size:11px;color:var(--mute)}
   .toggle{min-height:40px}
   .stack > .field{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:10px}
-  .stack > .field > span{margin:0}
+  .stack > .field > span,.stack > .field > label{margin:0}
 
   /* the tab bar never leaves */
   .tabs{
@@ -532,7 +542,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
     font-size:10.5px;letter-spacing:.01em;
   }
   .tab .tico{display:flex;color:var(--text);opacity:.85}
-  .tab[aria-selected="true"] .tico{color:var(--gold-hi);opacity:1}
+  .tab[aria-pressed="true"] .tico{color:var(--gold-hi);opacity:1}
 
   /* dragged or tapped down: just the tab bar, and the plate takes the room */
   body.sheet-min .sheetbody{display:none!important}
@@ -604,14 +614,14 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
 
     <div class="plate">
       <div class="frame" id="frame">
-        <canvas id="gl" width="540" height="960"></canvas>
+        <canvas id="gl" width="540" height="960" role="img" aria-label="Procedurally generated wallpaper preview"></canvas>
         <div class="guides" id="guides" aria-hidden="true">
           <div class="g island"></div>
           <div class="g clock"><span>clock</span></div>
           <div class="g widgets"><span>widgets</span></div>
           <div class="g controls"><span>controls</span></div>
         </div>
-        <div class="busy" id="busy">rendering full size…</div>
+        <div class="busy" id="busy" role="status" aria-live="polite">rendering full size…</div>
         <p class="caption" id="caption" aria-live="polite"><b>Limb</b><span>14 plates · tap to take over</span></p>
         <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
           <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
@@ -673,7 +683,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
       <!-- control sections are appended here -->
     </div>
 
-    <nav class="tabs" id="tabs" role="tablist" aria-label="Control groups"></nav>
+    <nav class="tabs" id="tabs" aria-label="Control groups"></nav>
   </aside>
 </div>
 
@@ -1040,7 +1050,8 @@ function makeRenderer(canvas){
   const warned = {};
   const loc = {}, U = n => (loc[n] !== undefined ? loc[n] : (loc[n]=gl.getUniformLocation(prog,n)));
 
-  return function draw(p, w, h, ps, phase){
+  const draw = function(p, w, h, ps, phase){
+    if(gl.isContextLost()) throw new Error("WebGL context was lost");
     if(canvas.width!==w || canvas.height!==h){ canvas.width=w; canvas.height=h; }
     gl.viewport(0,0,w,h);
     gl.useProgram(prog);
@@ -1072,6 +1083,43 @@ function makeRenderer(canvas){
     gl.uniform3fv(U("uC2"), hex2rgb(p.c2));
     gl.drawArrays(gl.TRIANGLES,0,3);
   };
+  draw.limits = {
+    texture: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+    viewport: gl.getParameter(gl.MAX_VIEWPORT_DIMS)
+  };
+  draw.dispose = ()=>{
+    const lose = gl.getExtension("WEBGL_lose_context");
+    if(lose) lose.loseContext();
+  };
+  return draw;
+}
+
+function maxExportDimensions(renderer){
+  if(!renderer || !renderer.limits) return {w:2048,h:2048};
+  return {
+    w: Math.min(8192, renderer.limits.texture, renderer.limits.viewport[0]),
+    h: Math.min(8192, renderer.limits.texture, renderer.limits.viewport[1])
+  };
+}
+
+function makeExportSurface(w,h){
+  const max = maxExportDimensions(draw);
+  if(w > max.w || h > max.h)
+    throw new Error("this device supports exports up to "+max.w+" × "+max.h);
+  const memory=Number(navigator.deviceMemory)||0;
+  const coarse=!!(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches);
+  const pixelBudget=memory&&memory<=2?16e6:(coarse?24e6:48e6);
+  if(w*h>pixelBudget)
+    throw new Error("this device's safe export limit is "+Math.round(pixelBudget/1e6)+" megapixels");
+  /* A dedicated context keeps a failed large allocation from taking the live
+     preview down with it.  The caller must dispose it when finished. */
+  const out = document.createElement("canvas");
+  out.width = Math.max(2,w); out.height = Math.max(2,h);
+  const render = makeRenderer(out);
+  if(!render) throw new Error("could not create an export renderer");
+  return {canvas:out, draw:render, dispose(){
+    render.dispose(); out.width=1; out.height=1;
+  }};
 }
 
 /* ============================== boot ============================== */
@@ -1086,6 +1134,15 @@ const stMsg  = document.getElementById("stMsg");
 
 let draw = null, drawThumb = null, thumbCanvas = null;
 try { draw = makeRenderer(canvas); } catch(e){ console.error(e); }
+
+canvas.addEventListener("webglcontextlost", e=>{
+  e.preventDefault();
+  if(stMsg) msg("graphics context lost — restoring…");
+});
+canvas.addEventListener("webglcontextrestored", ()=>{
+  try { draw = makeRenderer(canvas); render(); refreshThumbs(); msg("graphics restored"); }
+  catch(e){ console.error(e); msg("graphics could not be restored — reload the page"); }
+});
 
 if(!draw){
   frame.remove();
@@ -1106,6 +1163,7 @@ let previewScale = 1, rafId = 0, rw = 2, rh = 2;
 let phase = 0, animRAF = 0, animT0 = 0, recording = false, fpsEma = 0, lastFrame = 0;
 function schedule(){
   if(!draw || rafId) return;
+  if(typeof invalidatePreparedShare === "function") invalidatePreparedShare();
   rafId = requestAnimationFrame(()=>{ rafId = 0; render(); });
 }
 function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale, phase); }
@@ -1280,6 +1338,34 @@ function named(label, node){
   wrap.appendChild(node);
   return node;
 }
+/* One shared touch controller serves every slider.  This preserves tap-anywhere
+   tracks without installing dozens of non-passive listeners on window. */
+const TOUCH_SLIDERS = new WeakMap();
+let touchRange = null;
+const rangeTouch = (event)=>{
+  if(!touchRange) return null;
+  return Array.from(event.changedTouches).find(t=>t.identifier===touchRange.id) || null;
+};
+const setRangeFromTouch = (touch)=>{
+  const {input,min,max,step} = touchRange;
+  const box=input.getBoundingClientRect();
+  const f=Math.max(0,Math.min(1,(touch.clientX-box.left)/Math.max(box.width,1)));
+  input.value=Math.max(min,Math.min(max,min+Math.round((min+f*(max-min)-min)/step)*step));
+  input.dispatchEvent(new Event("input",{bubbles:true}));
+};
+window.addEventListener("touchmove",event=>{
+  const t=rangeTouch(event); if(!t) return;
+  const dx=t.clientX-touchRange.x, dy=t.clientY-touchRange.y;
+  if(!touchRange.drag && Math.max(Math.abs(dx),Math.abs(dy))<6) return;
+  if(!touchRange.drag && Math.abs(dy)>Math.abs(dx)){ touchRange=null; return; }
+  touchRange.drag=true; setRangeFromTouch(t); event.preventDefault();
+},{passive:false});
+window.addEventListener("touchend",event=>{
+  const t=rangeTouch(event); if(!t) return;
+  if(!touchRange.drag) setRangeFromTouch(t); touchRange=null;
+});
+window.addEventListener("touchcancel",()=>{ touchRange=null; });
+
 function slider(host, key, label, min, max, step, fmt, onAfter){
   const row = el("div","row",host);
   const top = el("div","top",row);
@@ -1299,60 +1385,11 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
   /* Some mobile browsers only begin a range interaction when the thumb itself
      is touched.  Map a touch anywhere on the track to its matching value so
      users can tap or drag directly to the setting they want. */
-  const setFromTouch = (clientX)=>{
-    const bounds = inp.getBoundingClientRect();
-    const fraction = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
-    const raw = min + fraction * (max - min);
-    const stepped = min + Math.round((raw - min) / step) * step;
-    inp.value = Math.max(min, Math.min(max, stepped)).toFixed(8);
-    inp.dispatchEvent(new Event("input", {bubbles:true}));
-  };
-  let touchId = null, touchStart = null, touchIsDrag = null;
-  const activeTouch = (event)=>Array.from(event.changedTouches).find((touch)=>touch.identifier === touchId);
-  const moveTouch = (event)=>{
-    const touch = activeTouch(event);
-    if(!touch) return;
-    if(touchIsDrag === null){
-      const dx = touch.clientX - touchStart.x;
-      const dy = touch.clientY - touchStart.y;
-      if(Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
-      if(Math.abs(dy) > Math.abs(dx)){
-        touchId = null;
-        touchStart = null;
-        return;
-      }
-      touchIsDrag = true;
-    }
-    setFromTouch(touch.clientX);
-    event.preventDefault();
-  };
-  const endTouch = (event)=>{
-    const touch = activeTouch(event);
-    if(!touch) return;
-    if(!touchIsDrag) setFromTouch(touch.clientX);
-    touchId = null;
-    touchStart = null;
-    touchIsDrag = null;
-  };
-  const cancelTouch = (event)=>{
-    if(activeTouch(event)){
-      touchId = null;
-      touchStart = null;
-      touchIsDrag = null;
-    }
-  };
-  inp.addEventListener("touchstart", (event)=>{
-    const touch = event.changedTouches[0];
-    if(!touch) return;
-    touchId = touch.identifier;
-    touchStart = {x:touch.clientX, y:touch.clientY};
-    touchIsDrag = null;
-  });
-  /* Listen on window so a drag keeps working after it leaves the input's
-     original hit area, which is common on narrow mobile tracks. */
-  window.addEventListener("touchmove", moveTouch, {passive:false});
-  window.addEventListener("touchend", endTouch);
-  window.addEventListener("touchcancel", cancelTouch);
+  TOUCH_SLIDERS.set(inp,{min,max,step});
+  inp.addEventListener("touchstart",event=>{
+    const t=event.changedTouches[0], cfg=TOUCH_SLIDERS.get(inp); if(!t||!cfg) return;
+    touchRange={input:inp,id:t.identifier,x:t.clientX,y:t.clientY,drag:false,...cfg};
+  },{passive:true});
   binders.push(sync); sync();
   return row;
 }
@@ -1367,7 +1404,7 @@ function toggle(host, key, label, onAfter){
 }
 function segmented(host, key, label, options, onAfter){
   const seg = el("div","seg",host);
-  seg.setAttribute("role","group");
+  seg.setAttribute("role","group"); seg.setAttribute("aria-label",label);
   const btns = options.map((o,i)=>{
     const b = el("button",null,seg);
     b.type="button"; b.textContent=o;
@@ -1425,6 +1462,7 @@ slider(gMotion,"looplen","Loop length",1,12,0.5, v=>v.toFixed(1)+" s");
 const fpsField = el("div","field",gMotion);
 el("span",null,fpsField).textContent = "Frame rate";
 const fpsSel = el("select","sel",fpsField);
+fpsSel.id="fps"; fpsSel.setAttribute("aria-label","Frame rate");
 [24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
 fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
 binders.push(()=>{ fpsSel.value = P.fps; });
@@ -1493,6 +1531,7 @@ slider(gTex,"texscale","Texture scale",0.2,3,0.01, v=>v.toFixed(2)+"×", refresh
 const gOut = section("Output");
 const sizeBox = el("div","group",gOut);
 const sel = el("select","sel",sizeBox);
+sel.id="output-size"; sel.setAttribute("aria-label","Output size preset");
 SIZES.forEach(group=>{
   const g = el("optgroup",null,sel);
   g.label = group.group;
@@ -1512,8 +1551,9 @@ const dims = el("div","dims",sizeBox);
 named("Size", sizeBox);
 function dimField(key,label){
   const f = el("div","field",dims);
-  el("span",null,f).textContent = label;
+  const lab=el("label",null,f); lab.textContent = label;
   const i = el("input",null,f);
+  i.id="dimension-"+key.toLowerCase(); lab.htmlFor=i.id;
   i.type="number"; i.min=64; i.max=8192; i.step=1;
   const sync = ()=> i.value = P[key];
   i.addEventListener("change", ()=>{
@@ -1536,8 +1576,9 @@ binders.push(syncDims);
 
 const seedRow = el("div","seedrow",gOut);
 const seedField = el("div","field",seedRow);
-el("span",null,seedField).textContent = "Seed";
+const seedLabel=el("label",null,seedField); seedLabel.textContent = "Seed";
 const seedInput = el("input",null,seedField);
+seedInput.id="seed"; seedLabel.htmlFor=seedInput.id;
 seedInput.type="number"; seedInput.min=0; seedInput.max=9999; seedInput.step=1;
 const syncSeed = ()=> seedInput.value = Math.round(P.seed*10000);
 seedInput.addEventListener("change", ()=>{
@@ -1553,8 +1594,9 @@ toggle(gOut,"guides","Lock screen guides", ()=> frame.classList.toggle("guided",
 binders.push(()=> frame.classList.toggle("guided", !!P.guides));
 
 const fmtField = el("div","field",gOut);
-el("span",null,fmtField).textContent = "File format";
+const fmtLabel=el("label",null,fmtField); fmtLabel.textContent = "File format";
 const fmtSel = el("select","sel",fmtField);
+fmtSel.id="file-format"; fmtLabel.htmlFor=fmtSel.id;
 [["png","PNG · lossless"],["webp","WebP · small"],["jpeg","JPEG · smallest"]].forEach(([v,t])=>{
   const o = el("option",null,fmtSel); o.value=v; o.textContent=t;
 });
@@ -1564,8 +1606,9 @@ binders.push(()=>{ fmtSel.value = P.fmt; });
 
 const setRow = el("div","pair",gOut);
 const setField = el("div","field",setRow);
-el("span",null,setField).textContent = "Set size";
+const setLabel=el("label",null,setField); setLabel.textContent = "Set size";
 const setSel = el("select","sel",setField);
+setSel.id="set-size"; setLabel.htmlFor=setSel.id;
 [4,6,8,12].forEach(n=>{ const o=el("option",null,setSel); o.value=n; o.textContent=n+" stills"; });
 setSel.value = P.setsize;
 setSel.addEventListener("change", ()=>{ P.setsize = parseInt(setSel.value,10); });
@@ -1586,7 +1629,7 @@ const strip  = document.getElementById("peekplates");
 SECTIONS.forEach((sec,i)=>{
   const b = el("button","tab",tabsEl);
   b.type="button";
-  b.setAttribute("role","tab");
+  b.id="category-"+i;
   b.innerHTML = '<span class="tico">'+(ICONS[sec.dataset.sec]||"")+'</span>'
               + '<span class="tlbl">'+sec.dataset.sec+'</span>';
   b.addEventListener("click", ()=> setTab(i));
@@ -1603,12 +1646,22 @@ function setMin(min){
 function setTab(i){
   setMin(false);              // a tapped category always shows its contents
   SECTIONS.forEach((s,n)=>{ s.classList.toggle("on", n===i); s.scrollTop = 0; });
-  tabsEl.querySelectorAll(".tab").forEach((b,n)=> b.setAttribute("aria-selected", n===i ? "true":"false"));
+  tabsEl.querySelectorAll(".tab").forEach((b,n)=>{
+    b.setAttribute("aria-pressed", n===i ? "true":"false"); b.tabIndex=n===i?0:-1;
+  });
   strip.hidden = SECTIONS[i].dataset.sec !== "Recipes";
-  const active = tabsEl.querySelector('.tab[aria-selected="true"]');
+  const active = tabsEl.querySelector('.tab[aria-pressed="true"]');
   if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"center"});
   rail.scrollTop = 0;
 }
+tabsEl.addEventListener("keydown",event=>{
+  if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+  const all=Array.from(tabsEl.querySelectorAll(".tab"));
+  let i=all.indexOf(document.activeElement);
+  if(event.key==="Home") i=0; else if(event.key==="End") i=all.length-1;
+  else i=(i+(event.key==="ArrowRight"?1:-1)+all.length)%all.length;
+  event.preventDefault(); setTab(i); all[i].focus();
+});
 setTab(0);
 
 /* ============================== offline video ==============================
@@ -1743,6 +1796,7 @@ async function encodeLoopMP4(p, {fps, seconds, onProgress}){
   const config = await pickAvcConfig(width, height, bitrate, fps);
   if(!config) return null;
 
+  const surface = makeExportSurface(width,height);
   const samples = [];
   let description = null, failed = null;
   const encoder = new VideoEncoder({
@@ -1756,28 +1810,27 @@ async function encodeLoopMP4(p, {fps, seconds, onProgress}){
     },
     error: e => { failed = e; }
   });
-  encoder.configure(config);
-
-  const frameDur = Math.round(1e6 / fps);
-  const gop = Math.max(1, Math.round(fps * 2));
-  for(let i = 0; i < total && !failed; i++){
-    draw(p, width, height, 1, (i / total) * Math.PI * 2);
-    const frame = new VideoFrame(canvas, {timestamp: Math.round(i * 1e6 / fps), duration: frameDur});
-    encoder.encode(frame, {keyFrame: i % gop === 0});
-    frame.close();
-    if(onProgress) onProgress(i + 1, total);
-    // yield so the overlay repaints, and let the encoder drain if it falls behind
-    await new Promise(r => setTimeout(r, 0));
-    while(encoder.encodeQueueSize > 6 && !failed){
-      await new Promise(r => setTimeout(r, 8));
+  try{
+    encoder.configure(config);
+    const frameDur = Math.round(1e6 / fps);
+    const gop = Math.max(1, Math.round(fps * 2));
+    for(let i = 0; i < total && !failed; i++){
+      surface.draw(p, width, height, 1, (i / total) * Math.PI * 2);
+      const frame = new VideoFrame(surface.canvas, {timestamp: Math.round(i * 1e6 / fps), duration: frameDur});
+      try { encoder.encode(frame, {keyFrame: i % gop === 0}); }
+      finally { frame.close(); }
+      if(onProgress) onProgress(i + 1, total);
+      await new Promise(r => setTimeout(r, 0));
+      while(encoder.encodeQueueSize > 6 && !failed) await new Promise(r => setTimeout(r, 8));
     }
+    if(failed) throw failed;
+    await encoder.flush();
+    if(!description || !samples.length) return null;
+    return muxMP4({samples, description, width, height, fps});
+  } finally {
+    try { if(encoder.state!=="closed") encoder.close(); } catch(e){}
+    surface.dispose();
   }
-  if(failed){ try { encoder.close(); } catch(e){} throw failed; }
-
-  await encoder.flush();
-  encoder.close();
-  if(!description || !samples.length) return null;
-  return muxMP4({samples, description, width, height, fps});
 }
 
 /* ============================== recipes, shuffle, export ============================== */
@@ -1833,7 +1886,8 @@ function flashCaption(name){
 /* ---------- on arrival, show what the thing can do ---------- */
 let attractTimer = 0, attractStep = 0, attractOrder = [];
 function startAttract(){
-  if(!draw || /[#&]p=/.test(location.hash)) return;
+  if(!draw || /[#&]p=/.test(location.hash) ||
+     (window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches)) return;
   attractOrder = RECIPES.map((_,i)=>i);   // in strip order, so the row reads as a filmstrip
   document.body.classList.add("attracting");
   const tick = ()=>{
@@ -1893,6 +1947,7 @@ document.addEventListener("keydown", e=>{
    on anything but a <video>) and inside a sandboxed frame. */
 const hud = document.getElementById("hud");
 const immerseBtn = document.getElementById("immerse");
+if(!draw){ immerseBtn.disabled=true; immerseBtn.title="Fullscreen needs WebGL2"; }
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 
 function enterImmersive(){
@@ -1931,6 +1986,7 @@ canvas.addEventListener("click", ()=>{
 });
 
 function syncHud(){
+  if(!hud) return;
   const fill = hud.querySelector('[data-act="fill"]');
   const play = hud.querySelector('[data-act="animate"]');
   fill.textContent = P.fill ? "Fill" : "Fit";
@@ -1939,7 +1995,7 @@ function syncHud(){
   play.classList.toggle("on", !!P.animate);
 }
 binders.push(syncHud);
-hud.addEventListener("click", e=>{
+if(hud) hud.addEventListener("click", e=>{
   const b = e.target.closest("[data-act]");
   if(!b) return;
   e.stopPropagation();
@@ -1955,8 +2011,11 @@ const MIME = {png:"image/png", webp:"image/webp", jpeg:"image/jpeg"};
 const QUAL = {png:undefined, webp:0.95, jpeg:0.94};
 const LIMIT = 16*1024*1024;
 
-function toBlob(type, quality){
-  return new Promise(res => canvas.toBlob(b => res(b), type, quality));
+function canvasBlob(target, type, quality){
+  return new Promise((res,rej)=>{
+    try { target.toBlob(b=>b?res(b):rej(new Error("the browser could not allocate the requested image")),type,quality); }
+    catch(e){ rej(e); }
+  });
 }
 async function saveBlob(blob, filename){
   let dl = null;
@@ -1984,43 +2043,52 @@ async function saveBlob(blob, filename){
 }
 let exporting = false;
 document.getElementById("export").addEventListener("click", exportStill);
+function setExportBusy(on,text){
+  if(text) busy.textContent=text;
+  busy.classList.toggle("on",on);
+  document.querySelector(".app").setAttribute("aria-busy",on?"true":"false");
+  [document.getElementById("export"),document.getElementById("mSave"),
+   document.getElementById("mShare"),setBtn,recBtn].forEach(b=>{ if(b) b.disabled=on; });
+}
 
 function stillName(fmt){
   return "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+P.W+"x"+P.H
        + "_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg" ? "jpg" : fmt);
 }
 async function makeStill(){
-  draw(P, P.W, P.H, 1, phase);
-  let fmt = P.fmt;
-  let blob = await toBlob(MIME[fmt], QUAL[fmt]);
-  if(blob && blob.size > LIMIT && fmt === "png"){
-    const alt = await toBlob(MIME.webp, QUAL.webp);
-    if(alt && alt.size < blob.size){ blob = alt; fmt = "webp"; msg("PNG exceeded 16 MB — exported as WebP"); }
-  }
-  return {blob, fmt};
+  const surface=makeExportSurface(P.W,P.H);
+  try{
+    surface.draw(P,P.W,P.H,1,phase);
+    let fmt=P.fmt, blob=await canvasBlob(surface.canvas,MIME[fmt],QUAL[fmt]);
+    if(blob.size>LIMIT && fmt==="png"){
+      const alt=await canvasBlob(surface.canvas,MIME.webp,QUAL.webp);
+      if(alt.size<blob.size){ blob=alt; fmt="webp"; msg("PNG exceeded 16 MB — exported as WebP"); }
+    }
+    return {blob,fmt};
+  } finally { surface.dispose(); }
 }
 
 /* Hand the image to the OS share sheet where there is one — on iOS that is the
    only route into Photos that does not go through the Files app. */
 async function sharePlate(){
   if(!draw || exporting) return;
+  const signature=encodeState()+"|"+P.fmt;
+  if(preparedShare && preparedShare.signature===signature){
+    const prepared=preparedShare; preparedShare=null; syncShareButton();
+    try { await navigator.share({files:[prepared.file],title:"Emulsion"}); msg("shared"); }
+    catch(err){ if(err && err.name==="AbortError") msg("share canceled"); else { console.error(err); msg("share failed"); } }
+    return;
+  }
   exporting = true; recording = true;
-  busy.textContent = "preparing image…";
-  busy.classList.add("on");
+  setExportBusy(true,"preparing image…");
   try{
     const {blob, fmt} = await makeStill();
     if(!blob){ msg("could not render the image"); return; }
     const name = stillName(fmt);
     const file = typeof File !== "undefined" ? new File([blob], name, {type: MIME[fmt]}) : null;
     if(file && navigator.canShare && navigator.canShare({files:[file]})){
-      try {
-        await navigator.share({files:[file], title:"Emulsion"});
-        msg("shared");
-      } catch(err){
-        if(err && err.name === "AbortError") msg("share canceled");
-        else if(err && err.name === "NotAllowedError") msg("share needs a fresh tap — try Share again");
-        else await saveBlob(blob, name);
-      }
+      preparedShare={signature,file}; syncShareButton();
+      msg("image ready — tap Share again");
     } else {
       await saveBlob(blob, name);
     }
@@ -2028,17 +2096,28 @@ async function sharePlate(){
     console.error(err);
     msg("share failed · "+(err && err.message ? err.message : "unknown error"));
   } finally {
-    busy.classList.remove("on");
+    setExportBusy(false);
     exporting = false; recording = false;
     render();
   }
 }
 
+let preparedShare=null;
+const mobileShareBtn=document.getElementById("mShare");
+function syncShareButton(){
+  mobileShareBtn.setAttribute("aria-label",preparedShare?"Share prepared image":"Prepare image to share");
+  mobileShareBtn.title=preparedShare?"Share prepared image":"Prepare image to share";
+}
+function invalidatePreparedShare(){
+  if(!preparedShare) return;
+  preparedShare=null; syncShareButton();
+}
+syncShareButton();
+
 async function exportStill(){
   if(!draw || exporting) return;
   exporting = true; recording = true;
-  busy.textContent = "rendering full size…";
-  busy.classList.add("on");
+  setExportBusy(true,"rendering full size…");
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
   try{
     const {blob, fmt} = await makeStill();
@@ -2048,7 +2127,7 @@ async function exportStill(){
     console.error(err);
     msg("export failed · "+(err && err.message ? err.message : "unknown error"));
   } finally {
-    busy.classList.remove("on");
+    setExportBusy(false);
     exporting = false; recording = false;
     render();
   }
@@ -2061,34 +2140,58 @@ setBtn.addEventListener("click", async ()=>{
   if(!draw || exporting) return;
   const n = P.setsize, keepSeed = P.seed;
   exporting = true; recording = true;
-  busy.textContent = "rendering set…";
-  busy.classList.add("on");
+  setExportBusy(true,"rendering set…");
+  const files=[];
   try{
     for(let i=0;i<n;i++){
       P.seed = Math.round(Math.random()*9999)/10000;
       msg("frame "+(i+1)+" of "+n+"…");
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      draw(P, P.W, P.H, 1, phase);
-      let fmt = P.fmt;
-      let blob = await toBlob(MIME[fmt], QUAL[fmt]);
-      if(blob && blob.size > LIMIT && fmt === "png"){
-        const alt = await toBlob(MIME.webp, QUAL.webp);
-        if(alt && alt.size < blob.size){ blob = alt; fmt = "webp"; }
-      }
-      if(!blob){ msg("export failed — try another format"); break; }
+      const made=await makeStill(); let {blob,fmt}=made;
       const name = "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+(i+1)+"_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg"?"jpg":fmt);
-      const status = await saveBlob(blob, name);
-      if(status === "declined"){ msg("set canceled at "+(i+1)+" of "+n); break; }
-      if(status === "failed") break;
-      if(i < n-1) await new Promise(r=>setTimeout(r,500));
+      files.push({name,blob});
+    }
+    if(files.length){
+      busy.textContent="packing set…";
+      await saveBlob(await makeZip(files),"emulsion_set_"+P.W+"x"+P.H+".zip");
     }
   } finally {
     P.seed = keepSeed; syncAll();
-    busy.classList.remove("on");
+    setExportBusy(false);
     exporting = false; recording = false;
     render();
   }
 });
+
+/* Store-only ZIP: image formats are already compressed, and one archive keeps
+   browsers from blocking a burst of downloads after the initiating gesture. */
+const crcTable=(()=>{ const t=[]; for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=(c&1)?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(bytes){ let c=0xFFFFFFFF; for(const b of bytes) c=crcTable[(c^b)&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+const le16=n=>[n&255,(n>>>8)&255], le32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];
+async function makeZip(files){
+  const local=[],central=[]; let offset=0;
+  for(const {name,blob} of files){
+    const nameBytes=new TextEncoder().encode(name), data=new Uint8Array(await blob.arrayBuffer());
+    const crc=crc32(data), size=data.byteLength;
+    const head=new Uint8Array([
+      ...le32(0x04034b50),...le16(20),...le16(0),...le16(0),...le16(0),...le16(0),
+      ...le32(crc),...le32(size),...le32(size),...le16(nameBytes.length),...le16(0),...nameBytes
+    ]);
+    local.push(head,data);
+    central.push(new Uint8Array([
+      ...le32(0x02014b50),...le16(20),...le16(20),...le16(0),...le16(0),...le16(0),...le16(0),
+      ...le32(crc),...le32(size),...le32(size),...le16(nameBytes.length),...le16(0),...le16(0),
+      ...le16(0),...le16(0),...le32(0),...le32(offset),...nameBytes
+    ]));
+    offset+=head.byteLength+size;
+  }
+  const centralSize=central.reduce((n,p)=>n+p.byteLength,0);
+  const end=new Uint8Array([
+    ...le32(0x06054b50),...le16(0),...le16(0),...le16(files.length),...le16(files.length),
+    ...le32(centralSize),...le32(offset),...le16(0)
+  ]);
+  return new Blob([...local,...central,end],{type:"application/zip"});
+}
 
 /* ---------- record one seamless loop ---------- */
 const VIDEO_TYPES = [
@@ -2115,11 +2218,11 @@ if(!VIDEO && !canEncodeVideo()){
 
 /* How fast can this machine actually paint a frame at full size? Only the
    realtime fallback cares — the WebCodecs path is immune to it. */
-function measureFps(w, h, frames){
+function measureFps(renderer,w, h, frames){
   return new Promise(res=>{
     let i = 0; const t0 = performance.now();
     (function step(){
-      draw(P, w, h, 1, (i/frames)*Math.PI*2);
+      renderer(P, w, h, 1, (i/frames)*Math.PI*2);
       if(++i >= frames){ res(frames / ((performance.now() - t0)/1000)); return; }
       requestAnimationFrame(step);
     })();
@@ -2129,14 +2232,17 @@ function measureFps(w, h, frames){
 /* Fallback: capture the canvas in real time. Frame timing comes from the wall
    clock here, so the render has to keep up — shrink it until it can. */
 async function recordRealtime(dur){
-  const measured = await measureFps(P.W, P.H, 6);
+  const probe=makeExportSurface(P.W,P.H);
+  let measured;
+  try { measured=await measureFps(probe.draw,P.W,P.H,6); } finally { probe.dispose(); }
   let scale = Math.min(1, Math.sqrt(Math.max(measured,1) / 26));
   scale = Math.max(0.4, Math.round(scale*20)/20);
   const w = Math.max(2, Math.round(P.W*scale/2)*2);
   const h = Math.max(2, Math.round(P.H*scale/2)*2);
 
-  draw(P, w, h, 1, 0);
-  const stream = canvas.captureStream();
+  const surface=makeExportSurface(w,h);
+  surface.draw(P, w, h, 1, 0);
+  const stream = surface.canvas.captureStream();
   const chunks = [];
   const rec = new MediaRecorder(stream, {
     mimeType: VIDEO.mime,
@@ -2144,33 +2250,32 @@ async function recordRealtime(dur){
   });
   rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
   const stopped = new Promise(r => { rec.onstop = r; });
-  rec.start();
-  const t0 = performance.now();
-  await new Promise(done=>{
-    (function step(){
-      const el = performance.now() - t0;
-      draw(P, w, h, 1, (el/(dur*1000))*Math.PI*2);
-      busy.textContent = "recording " + (el/1000).toFixed(1) + " / " + dur.toFixed(1) + " s";
-      if(el >= dur*1000){ done(); return; }
-      requestAnimationFrame(step);
-    })();
-  });
-  rec.stop();
-  await stopped;
-  stream.getTracks().forEach(t => t.stop());
-  return {
-    blob: new Blob(chunks, {type: VIDEO.mime}),
-    ext: VIDEO.ext,
-    note: scale < 1 ? " · captured at " + Math.round(scale*100) + "% size to hold frame rate" : ""
-  };
+  try{
+    rec.start();
+    const t0 = performance.now();
+    await new Promise(done=>{
+      (function step(){
+        const el = performance.now() - t0;
+        surface.draw(P, w, h, 1, (el/(dur*1000))*Math.PI*2);
+        busy.textContent = "recording " + (el/1000).toFixed(1) + " / " + dur.toFixed(1) + " s";
+        if(el >= dur*1000){ done(); return; }
+        requestAnimationFrame(step);
+      })();
+    });
+    rec.stop(); await stopped;
+    return {blob:new Blob(chunks,{type:VIDEO.mime}),ext:VIDEO.ext,
+      note:scale<1?" · captured at "+Math.round(scale*100)+"% size to hold frame rate":""};
+  } finally {
+    try { if(rec.state!=="inactive") rec.stop(); } catch(e){}
+    stream.getTracks().forEach(t=>t.stop()); surface.dispose();
+  }
 }
 
 recBtn.addEventListener("click", async ()=>{
   if(!draw || exporting) return;
   const dur = Math.max(P.looplen, 1);
   exporting = true; recording = true;
-  busy.textContent = "preparing…";
-  busy.classList.add("on");
+  setExportBusy(true,"preparing…");
   try{
     let blob = null, ext = "mp4", note = "";
     if(canEncodeVideo()){
@@ -2197,7 +2302,7 @@ recBtn.addEventListener("click", async ()=>{
     console.error(err);
     msg("recording failed · " + (err && err.message ? err.message : "unknown error"));
   } finally {
-    busy.classList.remove("on");
+    setExportBusy(false);
     busy.textContent = "rendering full size…";
     exporting = false; recording = false;
     if(P.animate) animT0 = performance.now();
@@ -2252,6 +2357,14 @@ function measureSheet(){
 
 /* A link that carries the whole look, so a plate can be sent to someone. */
 const SHARE_KEYS = LOOK.concat(["mid","chroma","W","H","seed"]);   /* the ramp rides in LOOK */
+const STATE_RANGE = {
+  shape:[0,SHAPES.length-1,1], scale:[.25,4], angle:[-180,180], soft:[.03,1], warp:[0,1.5],
+  detail:[1,6], mottle:[0,1], posx:[-1.5,1.5], posy:[-1.5,1.5], bands:[.4,8],
+  blur:[0,1], streak:[0,1], streakang:[-180,180], exposure:[-2,2], contrast:[.3,3],
+  black:[0,.6], gamma:[.4,2.4], vignette:[0,1], gloss:[0,1], grain:[0,.6],
+  gsize:[.5,8], gdens:[.02,1], gresp:[0,1], tex:[0,4,1], texamt:[0,1],
+  texscale:[.2,3], mid:[.1,.9], W:[64,8192,1], H:[64,8192,1], seed:[0,.9999]
+};
 function encodeState(){
   const arr = SHARE_KEYS.map(k=>{
     const v = P[k];
@@ -2268,11 +2381,13 @@ function decodeState(str){
     SHARE_KEYS.forEach((k,i)=>{
       const def = DEFAULTS[k], v = arr[i];
       if(typeof def === "boolean") P[k] = !!v;
-      else if(typeof def === "number") P[k] = Number.isFinite(+v) ? +v : def;
+      else if(typeof def === "number"){
+        const range=STATE_RANGE[k], n=Number.isFinite(+v)?+v:def;
+        if(!range) P[k]=def;
+        else { const bounded=Math.max(range[0],Math.min(range[1],n)); P[k]=range[2]?Math.round(bounded):bounded; }
+      }
       else P[k] = /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : def;
     });
-    P.W = Math.max(64, Math.min(8192, Math.round(P.W)));
-    P.H = Math.max(64, Math.min(8192, Math.round(P.H)));
     return true;
   } catch(e){ return false; }
 }

@@ -2,16 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Emulsion</title>
+<title>Emulsion — Procedural Wallpaper &amp; Grain Loop Generator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Create grainy procedural wallpapers and seamless animated loops in your browser. No uploads, accounts, or generative AI.">
+<link rel="canonical" href="https://emulsion.benmross.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Emulsion">
+<meta property="og:title" content="Emulsion — Procedural Wallpaper Generator">
+<meta property="og:description" content="Shape procedural fields, tone, color, grain, and motion, then export full-resolution stills or seamless loops.">
+<meta property="og:url" content="https://emulsion.benmross.com/">
+<meta property="og:image" content="https://emulsion.benmross.com/app.png">
+<meta property="og:image:width" content="1500">
+<meta property="og:image:height" content="807">
+<meta property="og:image:alt" content="The Emulsion interface displaying a dark liquid-chrome procedural wallpaper">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emulsion — Procedural Wallpaper Generator">
+<meta name="twitter:description" content="Create grainy procedural wallpapers and seamless loops directly in your browser.">
+<meta name="twitter:image" content="https://emulsion.benmross.com/app.png">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#08090A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Emulsion">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Emulsion","url":"https://emulsion.benmross.com/","applicationCategory":"MultimediaApplication","operatingSystem":"Any modern web browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A browser-based procedural wallpaper and seamless grain-loop generator."}</script>
 <!-- @styles -->
 </head>
 
@@ -39,14 +58,14 @@
 
     <div class="plate">
       <div class="frame" id="frame">
-        <canvas id="gl" width="540" height="960"></canvas>
+        <canvas id="gl" width="540" height="960" role="img" aria-label="Procedurally generated wallpaper preview"></canvas>
         <div class="guides" id="guides" aria-hidden="true">
           <div class="g island"></div>
           <div class="g clock"><span>clock</span></div>
           <div class="g widgets"><span>widgets</span></div>
           <div class="g controls"><span>controls</span></div>
         </div>
-        <div class="busy" id="busy">rendering full size…</div>
+        <div class="busy" id="busy" role="status" aria-live="polite">rendering full size…</div>
         <p class="caption" id="caption" aria-live="polite"><b>Limb</b><span>14 plates · tap to take over</span></p>
         <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
           <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
@@ -108,7 +127,7 @@
       <!-- control sections are appended here -->
     </div>
 
-    <nav class="tabs" id="tabs" role="tablist" aria-label="Control groups"></nav>
+    <nav class="tabs" id="tabs" aria-label="Control groups"></nav>
   </aside>
 </div>
 

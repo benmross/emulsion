@@ -51,7 +51,8 @@ function flashCaption(name){
 /* ---------- on arrival, show what the thing can do ---------- */
 let attractTimer = 0, attractStep = 0, attractOrder = [];
 function startAttract(){
-  if(!draw || /[#&]p=/.test(location.hash)) return;
+  if(!draw || /[#&]p=/.test(location.hash) ||
+     (window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches)) return;
   attractOrder = RECIPES.map((_,i)=>i);   // in strip order, so the row reads as a filmstrip
   document.body.classList.add("attracting");
   const tick = ()=>{
@@ -111,6 +112,7 @@ document.addEventListener("keydown", e=>{
    on anything but a <video>) and inside a sandboxed frame. */
 const hud = document.getElementById("hud");
 const immerseBtn = document.getElementById("immerse");
+if(!draw){ immerseBtn.disabled=true; immerseBtn.title="Fullscreen needs WebGL2"; }
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 
 function enterImmersive(){
@@ -149,6 +151,7 @@ canvas.addEventListener("click", ()=>{
 });
 
 function syncHud(){
+  if(!hud) return;
   const fill = hud.querySelector('[data-act="fill"]');
   const play = hud.querySelector('[data-act="animate"]');
   fill.textContent = P.fill ? "Fill" : "Fit";
@@ -157,7 +160,7 @@ function syncHud(){
   play.classList.toggle("on", !!P.animate);
 }
 binders.push(syncHud);
-hud.addEventListener("click", e=>{
+if(hud) hud.addEventListener("click", e=>{
   const b = e.target.closest("[data-act]");
   if(!b) return;
   e.stopPropagation();
@@ -173,8 +176,11 @@ const MIME = {png:"image/png", webp:"image/webp", jpeg:"image/jpeg"};
 const QUAL = {png:undefined, webp:0.95, jpeg:0.94};
 const LIMIT = 16*1024*1024;
 
-function toBlob(type, quality){
-  return new Promise(res => canvas.toBlob(b => res(b), type, quality));
+function canvasBlob(target, type, quality){
+  return new Promise((res,rej)=>{
+    try { target.toBlob(b=>b?res(b):rej(new Error("the browser could not allocate the requested image")),type,quality); }
+    catch(e){ rej(e); }
+  });
 }
 async function saveBlob(blob, filename){
   let dl = null;
@@ -202,43 +208,52 @@ async function saveBlob(blob, filename){
 }
 let exporting = false;
 document.getElementById("export").addEventListener("click", exportStill);
+function setExportBusy(on,text){
+  if(text) busy.textContent=text;
+  busy.classList.toggle("on",on);
+  document.querySelector(".app").setAttribute("aria-busy",on?"true":"false");
+  [document.getElementById("export"),document.getElementById("mSave"),
+   document.getElementById("mShare"),setBtn,recBtn].forEach(b=>{ if(b) b.disabled=on; });
+}
 
 function stillName(fmt){
   return "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+P.W+"x"+P.H
        + "_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg" ? "jpg" : fmt);
 }
 async function makeStill(){
-  draw(P, P.W, P.H, 1, phase);
-  let fmt = P.fmt;
-  let blob = await toBlob(MIME[fmt], QUAL[fmt]);
-  if(blob && blob.size > LIMIT && fmt === "png"){
-    const alt = await toBlob(MIME.webp, QUAL.webp);
-    if(alt && alt.size < blob.size){ blob = alt; fmt = "webp"; msg("PNG exceeded 16 MB — exported as WebP"); }
-  }
-  return {blob, fmt};
+  const surface=makeExportSurface(P.W,P.H);
+  try{
+    surface.draw(P,P.W,P.H,1,phase);
+    let fmt=P.fmt, blob=await canvasBlob(surface.canvas,MIME[fmt],QUAL[fmt]);
+    if(blob.size>LIMIT && fmt==="png"){
+      const alt=await canvasBlob(surface.canvas,MIME.webp,QUAL.webp);
+      if(alt.size<blob.size){ blob=alt; fmt="webp"; msg("PNG exceeded 16 MB — exported as WebP"); }
+    }
+    return {blob,fmt};
+  } finally { surface.dispose(); }
 }
 
 /* Hand the image to the OS share sheet where there is one — on iOS that is the
    only route into Photos that does not go through the Files app. */
 async function sharePlate(){
   if(!draw || exporting) return;
+  const signature=encodeState()+"|"+P.fmt;
+  if(preparedShare && preparedShare.signature===signature){
+    const prepared=preparedShare; preparedShare=null; syncShareButton();
+    try { await navigator.share({files:[prepared.file],title:"Emulsion"}); msg("shared"); }
+    catch(err){ if(err && err.name==="AbortError") msg("share canceled"); else { console.error(err); msg("share failed"); } }
+    return;
+  }
   exporting = true; recording = true;
-  busy.textContent = "preparing image…";
-  busy.classList.add("on");
+  setExportBusy(true,"preparing image…");
   try{
     const {blob, fmt} = await makeStill();
     if(!blob){ msg("could not render the image"); return; }
     const name = stillName(fmt);
     const file = typeof File !== "undefined" ? new File([blob], name, {type: MIME[fmt]}) : null;
     if(file && navigator.canShare && navigator.canShare({files:[file]})){
-      try {
-        await navigator.share({files:[file], title:"Emulsion"});
-        msg("shared");
-      } catch(err){
-        if(err && err.name === "AbortError") msg("share canceled");
-        else if(err && err.name === "NotAllowedError") msg("share needs a fresh tap — try Share again");
-        else await saveBlob(blob, name);
-      }
+      preparedShare={signature,file}; syncShareButton();
+      msg("image ready — tap Share again");
     } else {
       await saveBlob(blob, name);
     }
@@ -246,17 +261,28 @@ async function sharePlate(){
     console.error(err);
     msg("share failed · "+(err && err.message ? err.message : "unknown error"));
   } finally {
-    busy.classList.remove("on");
+    setExportBusy(false);
     exporting = false; recording = false;
     render();
   }
 }
 
+let preparedShare=null;
+const mobileShareBtn=document.getElementById("mShare");
+function syncShareButton(){
+  mobileShareBtn.setAttribute("aria-label",preparedShare?"Share prepared image":"Prepare image to share");
+  mobileShareBtn.title=preparedShare?"Share prepared image":"Prepare image to share";
+}
+function invalidatePreparedShare(){
+  if(!preparedShare) return;
+  preparedShare=null; syncShareButton();
+}
+syncShareButton();
+
 async function exportStill(){
   if(!draw || exporting) return;
   exporting = true; recording = true;
-  busy.textContent = "rendering full size…";
-  busy.classList.add("on");
+  setExportBusy(true,"rendering full size…");
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
   try{
     const {blob, fmt} = await makeStill();
@@ -266,7 +292,7 @@ async function exportStill(){
     console.error(err);
     msg("export failed · "+(err && err.message ? err.message : "unknown error"));
   } finally {
-    busy.classList.remove("on");
+    setExportBusy(false);
     exporting = false; recording = false;
     render();
   }
@@ -279,34 +305,58 @@ setBtn.addEventListener("click", async ()=>{
   if(!draw || exporting) return;
   const n = P.setsize, keepSeed = P.seed;
   exporting = true; recording = true;
-  busy.textContent = "rendering set…";
-  busy.classList.add("on");
+  setExportBusy(true,"rendering set…");
+  const files=[];
   try{
     for(let i=0;i<n;i++){
       P.seed = Math.round(Math.random()*9999)/10000;
       msg("frame "+(i+1)+" of "+n+"…");
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      draw(P, P.W, P.H, 1, phase);
-      let fmt = P.fmt;
-      let blob = await toBlob(MIME[fmt], QUAL[fmt]);
-      if(blob && blob.size > LIMIT && fmt === "png"){
-        const alt = await toBlob(MIME.webp, QUAL.webp);
-        if(alt && alt.size < blob.size){ blob = alt; fmt = "webp"; }
-      }
-      if(!blob){ msg("export failed — try another format"); break; }
+      const made=await makeStill(); let {blob,fmt}=made;
       const name = "emulsion_"+SHAPES[P.shape].name.toLowerCase()+"_"+(i+1)+"_"+Math.round(P.seed*10000)+"."+(fmt==="jpeg"?"jpg":fmt);
-      const status = await saveBlob(blob, name);
-      if(status === "declined"){ msg("set canceled at "+(i+1)+" of "+n); break; }
-      if(status === "failed") break;
-      if(i < n-1) await new Promise(r=>setTimeout(r,500));
+      files.push({name,blob});
+    }
+    if(files.length){
+      busy.textContent="packing set…";
+      await saveBlob(await makeZip(files),"emulsion_set_"+P.W+"x"+P.H+".zip");
     }
   } finally {
     P.seed = keepSeed; syncAll();
-    busy.classList.remove("on");
+    setExportBusy(false);
     exporting = false; recording = false;
     render();
   }
 });
+
+/* Store-only ZIP: image formats are already compressed, and one archive keeps
+   browsers from blocking a burst of downloads after the initiating gesture. */
+const crcTable=(()=>{ const t=[]; for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=(c&1)?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(bytes){ let c=0xFFFFFFFF; for(const b of bytes) c=crcTable[(c^b)&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+const le16=n=>[n&255,(n>>>8)&255], le32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];
+async function makeZip(files){
+  const local=[],central=[]; let offset=0;
+  for(const {name,blob} of files){
+    const nameBytes=new TextEncoder().encode(name), data=new Uint8Array(await blob.arrayBuffer());
+    const crc=crc32(data), size=data.byteLength;
+    const head=new Uint8Array([
+      ...le32(0x04034b50),...le16(20),...le16(0),...le16(0),...le16(0),...le16(0),
+      ...le32(crc),...le32(size),...le32(size),...le16(nameBytes.length),...le16(0),...nameBytes
+    ]);
+    local.push(head,data);
+    central.push(new Uint8Array([
+      ...le32(0x02014b50),...le16(20),...le16(20),...le16(0),...le16(0),...le16(0),...le16(0),
+      ...le32(crc),...le32(size),...le32(size),...le16(nameBytes.length),...le16(0),...le16(0),
+      ...le16(0),...le16(0),...le32(0),...le32(offset),...nameBytes
+    ]));
+    offset+=head.byteLength+size;
+  }
+  const centralSize=central.reduce((n,p)=>n+p.byteLength,0);
+  const end=new Uint8Array([
+    ...le32(0x06054b50),...le16(0),...le16(0),...le16(files.length),...le16(files.length),
+    ...le32(centralSize),...le32(offset),...le16(0)
+  ]);
+  return new Blob([...local,...central,end],{type:"application/zip"});
+}
 
 /* ---------- record one seamless loop ---------- */
 const VIDEO_TYPES = [
@@ -333,11 +383,11 @@ if(!VIDEO && !canEncodeVideo()){
 
 /* How fast can this machine actually paint a frame at full size? Only the
    realtime fallback cares — the WebCodecs path is immune to it. */
-function measureFps(w, h, frames){
+function measureFps(renderer,w, h, frames){
   return new Promise(res=>{
     let i = 0; const t0 = performance.now();
     (function step(){
-      draw(P, w, h, 1, (i/frames)*Math.PI*2);
+      renderer(P, w, h, 1, (i/frames)*Math.PI*2);
       if(++i >= frames){ res(frames / ((performance.now() - t0)/1000)); return; }
       requestAnimationFrame(step);
     })();
@@ -347,14 +397,17 @@ function measureFps(w, h, frames){
 /* Fallback: capture the canvas in real time. Frame timing comes from the wall
    clock here, so the render has to keep up — shrink it until it can. */
 async function recordRealtime(dur){
-  const measured = await measureFps(P.W, P.H, 6);
+  const probe=makeExportSurface(P.W,P.H);
+  let measured;
+  try { measured=await measureFps(probe.draw,P.W,P.H,6); } finally { probe.dispose(); }
   let scale = Math.min(1, Math.sqrt(Math.max(measured,1) / 26));
   scale = Math.max(0.4, Math.round(scale*20)/20);
   const w = Math.max(2, Math.round(P.W*scale/2)*2);
   const h = Math.max(2, Math.round(P.H*scale/2)*2);
 
-  draw(P, w, h, 1, 0);
-  const stream = canvas.captureStream();
+  const surface=makeExportSurface(w,h);
+  surface.draw(P, w, h, 1, 0);
+  const stream = surface.canvas.captureStream();
   const chunks = [];
   const rec = new MediaRecorder(stream, {
     mimeType: VIDEO.mime,
@@ -362,33 +415,32 @@ async function recordRealtime(dur){
   });
   rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
   const stopped = new Promise(r => { rec.onstop = r; });
-  rec.start();
-  const t0 = performance.now();
-  await new Promise(done=>{
-    (function step(){
-      const el = performance.now() - t0;
-      draw(P, w, h, 1, (el/(dur*1000))*Math.PI*2);
-      busy.textContent = "recording " + (el/1000).toFixed(1) + " / " + dur.toFixed(1) + " s";
-      if(el >= dur*1000){ done(); return; }
-      requestAnimationFrame(step);
-    })();
-  });
-  rec.stop();
-  await stopped;
-  stream.getTracks().forEach(t => t.stop());
-  return {
-    blob: new Blob(chunks, {type: VIDEO.mime}),
-    ext: VIDEO.ext,
-    note: scale < 1 ? " · captured at " + Math.round(scale*100) + "% size to hold frame rate" : ""
-  };
+  try{
+    rec.start();
+    const t0 = performance.now();
+    await new Promise(done=>{
+      (function step(){
+        const el = performance.now() - t0;
+        surface.draw(P, w, h, 1, (el/(dur*1000))*Math.PI*2);
+        busy.textContent = "recording " + (el/1000).toFixed(1) + " / " + dur.toFixed(1) + " s";
+        if(el >= dur*1000){ done(); return; }
+        requestAnimationFrame(step);
+      })();
+    });
+    rec.stop(); await stopped;
+    return {blob:new Blob(chunks,{type:VIDEO.mime}),ext:VIDEO.ext,
+      note:scale<1?" · captured at "+Math.round(scale*100)+"% size to hold frame rate":""};
+  } finally {
+    try { if(rec.state!=="inactive") rec.stop(); } catch(e){}
+    stream.getTracks().forEach(t=>t.stop()); surface.dispose();
+  }
 }
 
 recBtn.addEventListener("click", async ()=>{
   if(!draw || exporting) return;
   const dur = Math.max(P.looplen, 1);
   exporting = true; recording = true;
-  busy.textContent = "preparing…";
-  busy.classList.add("on");
+  setExportBusy(true,"preparing…");
   try{
     let blob = null, ext = "mp4", note = "";
     if(canEncodeVideo()){
@@ -415,7 +467,7 @@ recBtn.addEventListener("click", async ()=>{
     console.error(err);
     msg("recording failed · " + (err && err.message ? err.message : "unknown error"));
   } finally {
-    busy.classList.remove("on");
+    setExportBusy(false);
     busy.textContent = "rendering full size…";
     exporting = false; recording = false;
     if(P.animate) animT0 = performance.now();
@@ -470,6 +522,14 @@ function measureSheet(){
 
 /* A link that carries the whole look, so a plate can be sent to someone. */
 const SHARE_KEYS = LOOK.concat(["mid","chroma","W","H","seed"]);   /* the ramp rides in LOOK */
+const STATE_RANGE = {
+  shape:[0,SHAPES.length-1,1], scale:[.25,4], angle:[-180,180], soft:[.03,1], warp:[0,1.5],
+  detail:[1,6], mottle:[0,1], posx:[-1.5,1.5], posy:[-1.5,1.5], bands:[.4,8],
+  blur:[0,1], streak:[0,1], streakang:[-180,180], exposure:[-2,2], contrast:[.3,3],
+  black:[0,.6], gamma:[.4,2.4], vignette:[0,1], gloss:[0,1], grain:[0,.6],
+  gsize:[.5,8], gdens:[.02,1], gresp:[0,1], tex:[0,4,1], texamt:[0,1],
+  texscale:[.2,3], mid:[.1,.9], W:[64,8192,1], H:[64,8192,1], seed:[0,.9999]
+};
 function encodeState(){
   const arr = SHARE_KEYS.map(k=>{
     const v = P[k];
@@ -486,11 +546,13 @@ function decodeState(str){
     SHARE_KEYS.forEach((k,i)=>{
       const def = DEFAULTS[k], v = arr[i];
       if(typeof def === "boolean") P[k] = !!v;
-      else if(typeof def === "number") P[k] = Number.isFinite(+v) ? +v : def;
+      else if(typeof def === "number"){
+        const range=STATE_RANGE[k], n=Number.isFinite(+v)?+v:def;
+        if(!range) P[k]=def;
+        else { const bounded=Math.max(range[0],Math.min(range[1],n)); P[k]=range[2]?Math.round(bounded):bounded; }
+      }
       else P[k] = /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : def;
     });
-    P.W = Math.max(64, Math.min(8192, Math.round(P.W)));
-    P.H = Math.max(64, Math.min(8192, Math.round(P.H)));
     return true;
   } catch(e){ return false; }
 }

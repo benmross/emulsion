@@ -11,6 +11,15 @@ const stMsg  = document.getElementById("stMsg");
 let draw = null, drawThumb = null, thumbCanvas = null;
 try { draw = makeRenderer(canvas); } catch(e){ console.error(e); }
 
+canvas.addEventListener("webglcontextlost", e=>{
+  e.preventDefault();
+  if(stMsg) msg("graphics context lost — restoring…");
+});
+canvas.addEventListener("webglcontextrestored", ()=>{
+  try { draw = makeRenderer(canvas); render(); refreshThumbs(); msg("graphics restored"); }
+  catch(e){ console.error(e); msg("graphics could not be restored — reload the page"); }
+});
+
 if(!draw){
   frame.remove();
   const n = document.createElement("p");
@@ -30,6 +39,7 @@ let previewScale = 1, rafId = 0, rw = 2, rh = 2;
 let phase = 0, animRAF = 0, animT0 = 0, recording = false, fpsEma = 0, lastFrame = 0;
 function schedule(){
   if(!draw || rafId) return;
+  if(typeof invalidatePreparedShare === "function") invalidatePreparedShare();
   rafId = requestAnimationFrame(()=>{ rafId = 0; render(); });
 }
 function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale, phase); }

@@ -6,7 +6,7 @@
  * no server, no build step for the user, and no network access beyond the
  * Google Fonts stylesheet.
  */
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -53,6 +53,10 @@ const page = template
 
 await mkdir(join(root, "dist"), { recursive: true });
 await writeFile(join(root, "dist", "index.html"), page);
+await Promise.all([
+  "icon.svg","icon-192.png","icon-512.png","apple-touch-icon.png","manifest.webmanifest","robots.txt","sitemap.xml","_headers","404.html"
+].map(f=>copyFile(join(root,"public",f),join(root,"dist",f))));
+await copyFile(join(root,"docs","app.png"),join(root,"dist","app.png"));
 
 const kb = (Buffer.byteLength(page) / 1024).toFixed(1);
 console.log(`dist/index.html — ${kb} kB, ${page.split("\n").length} lines`);

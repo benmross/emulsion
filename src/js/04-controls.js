@@ -60,6 +60,34 @@ function named(label, node){
   wrap.appendChild(node);
   return node;
 }
+/* One shared touch controller serves every slider.  This preserves tap-anywhere
+   tracks without installing dozens of non-passive listeners on window. */
+const TOUCH_SLIDERS = new WeakMap();
+let touchRange = null;
+const rangeTouch = (event)=>{
+  if(!touchRange) return null;
+  return Array.from(event.changedTouches).find(t=>t.identifier===touchRange.id) || null;
+};
+const setRangeFromTouch = (touch)=>{
+  const {input,min,max,step} = touchRange;
+  const box=input.getBoundingClientRect();
+  const f=Math.max(0,Math.min(1,(touch.clientX-box.left)/Math.max(box.width,1)));
+  input.value=Math.max(min,Math.min(max,min+Math.round((min+f*(max-min)-min)/step)*step));
+  input.dispatchEvent(new Event("input",{bubbles:true}));
+};
+window.addEventListener("touchmove",event=>{
+  const t=rangeTouch(event); if(!t) return;
+  const dx=t.clientX-touchRange.x, dy=t.clientY-touchRange.y;
+  if(!touchRange.drag && Math.max(Math.abs(dx),Math.abs(dy))<6) return;
+  if(!touchRange.drag && Math.abs(dy)>Math.abs(dx)){ touchRange=null; return; }
+  touchRange.drag=true; setRangeFromTouch(t); event.preventDefault();
+},{passive:false});
+window.addEventListener("touchend",event=>{
+  const t=rangeTouch(event); if(!t) return;
+  if(!touchRange.drag) setRangeFromTouch(t); touchRange=null;
+});
+window.addEventListener("touchcancel",()=>{ touchRange=null; });
+
 function slider(host, key, label, min, max, step, fmt, onAfter){
   const row = el("div","row",host);
   const top = el("div","top",row);
@@ -79,60 +107,11 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
   /* Some mobile browsers only begin a range interaction when the thumb itself
      is touched.  Map a touch anywhere on the track to its matching value so
      users can tap or drag directly to the setting they want. */
-  const setFromTouch = (clientX)=>{
-    const bounds = inp.getBoundingClientRect();
-    const fraction = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
-    const raw = min + fraction * (max - min);
-    const stepped = min + Math.round((raw - min) / step) * step;
-    inp.value = Math.max(min, Math.min(max, stepped)).toFixed(8);
-    inp.dispatchEvent(new Event("input", {bubbles:true}));
-  };
-  let touchId = null, touchStart = null, touchIsDrag = null;
-  const activeTouch = (event)=>Array.from(event.changedTouches).find((touch)=>touch.identifier === touchId);
-  const moveTouch = (event)=>{
-    const touch = activeTouch(event);
-    if(!touch) return;
-    if(touchIsDrag === null){
-      const dx = touch.clientX - touchStart.x;
-      const dy = touch.clientY - touchStart.y;
-      if(Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
-      if(Math.abs(dy) > Math.abs(dx)){
-        touchId = null;
-        touchStart = null;
-        return;
-      }
-      touchIsDrag = true;
-    }
-    setFromTouch(touch.clientX);
-    event.preventDefault();
-  };
-  const endTouch = (event)=>{
-    const touch = activeTouch(event);
-    if(!touch) return;
-    if(!touchIsDrag) setFromTouch(touch.clientX);
-    touchId = null;
-    touchStart = null;
-    touchIsDrag = null;
-  };
-  const cancelTouch = (event)=>{
-    if(activeTouch(event)){
-      touchId = null;
-      touchStart = null;
-      touchIsDrag = null;
-    }
-  };
-  inp.addEventListener("touchstart", (event)=>{
-    const touch = event.changedTouches[0];
-    if(!touch) return;
-    touchId = touch.identifier;
-    touchStart = {x:touch.clientX, y:touch.clientY};
-    touchIsDrag = null;
-  });
-  /* Listen on window so a drag keeps working after it leaves the input's
-     original hit area, which is common on narrow mobile tracks. */
-  window.addEventListener("touchmove", moveTouch, {passive:false});
-  window.addEventListener("touchend", endTouch);
-  window.addEventListener("touchcancel", cancelTouch);
+  TOUCH_SLIDERS.set(inp,{min,max,step});
+  inp.addEventListener("touchstart",event=>{
+    const t=event.changedTouches[0], cfg=TOUCH_SLIDERS.get(inp); if(!t||!cfg) return;
+    touchRange={input:inp,id:t.identifier,x:t.clientX,y:t.clientY,drag:false,...cfg};
+  },{passive:true});
   binders.push(sync); sync();
   return row;
 }
@@ -147,7 +126,7 @@ function toggle(host, key, label, onAfter){
 }
 function segmented(host, key, label, options, onAfter){
   const seg = el("div","seg",host);
-  seg.setAttribute("role","group");
+  seg.setAttribute("role","group"); seg.setAttribute("aria-label",label);
   const btns = options.map((o,i)=>{
     const b = el("button",null,seg);
     b.type="button"; b.textContent=o;
@@ -205,6 +184,7 @@ slider(gMotion,"looplen","Loop length",1,12,0.5, v=>v.toFixed(1)+" s");
 const fpsField = el("div","field",gMotion);
 el("span",null,fpsField).textContent = "Frame rate";
 const fpsSel = el("select","sel",fpsField);
+fpsSel.id="fps"; fpsSel.setAttribute("aria-label","Frame rate");
 [24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
 fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
 binders.push(()=>{ fpsSel.value = P.fps; });
@@ -273,6 +253,7 @@ slider(gTex,"texscale","Texture scale",0.2,3,0.01, v=>v.toFixed(2)+"×", refresh
 const gOut = section("Output");
 const sizeBox = el("div","group",gOut);
 const sel = el("select","sel",sizeBox);
+sel.id="output-size"; sel.setAttribute("aria-label","Output size preset");
 SIZES.forEach(group=>{
   const g = el("optgroup",null,sel);
   g.label = group.group;
@@ -292,8 +273,9 @@ const dims = el("div","dims",sizeBox);
 named("Size", sizeBox);
 function dimField(key,label){
   const f = el("div","field",dims);
-  el("span",null,f).textContent = label;
+  const lab=el("label",null,f); lab.textContent = label;
   const i = el("input",null,f);
+  i.id="dimension-"+key.toLowerCase(); lab.htmlFor=i.id;
   i.type="number"; i.min=64; i.max=8192; i.step=1;
   const sync = ()=> i.value = P[key];
   i.addEventListener("change", ()=>{
@@ -316,8 +298,9 @@ binders.push(syncDims);
 
 const seedRow = el("div","seedrow",gOut);
 const seedField = el("div","field",seedRow);
-el("span",null,seedField).textContent = "Seed";
+const seedLabel=el("label",null,seedField); seedLabel.textContent = "Seed";
 const seedInput = el("input",null,seedField);
+seedInput.id="seed"; seedLabel.htmlFor=seedInput.id;
 seedInput.type="number"; seedInput.min=0; seedInput.max=9999; seedInput.step=1;
 const syncSeed = ()=> seedInput.value = Math.round(P.seed*10000);
 seedInput.addEventListener("change", ()=>{
@@ -333,8 +316,9 @@ toggle(gOut,"guides","Lock screen guides", ()=> frame.classList.toggle("guided",
 binders.push(()=> frame.classList.toggle("guided", !!P.guides));
 
 const fmtField = el("div","field",gOut);
-el("span",null,fmtField).textContent = "File format";
+const fmtLabel=el("label",null,fmtField); fmtLabel.textContent = "File format";
 const fmtSel = el("select","sel",fmtField);
+fmtSel.id="file-format"; fmtLabel.htmlFor=fmtSel.id;
 [["png","PNG · lossless"],["webp","WebP · small"],["jpeg","JPEG · smallest"]].forEach(([v,t])=>{
   const o = el("option",null,fmtSel); o.value=v; o.textContent=t;
 });
@@ -344,8 +328,9 @@ binders.push(()=>{ fmtSel.value = P.fmt; });
 
 const setRow = el("div","pair",gOut);
 const setField = el("div","field",setRow);
-el("span",null,setField).textContent = "Set size";
+const setLabel=el("label",null,setField); setLabel.textContent = "Set size";
 const setSel = el("select","sel",setField);
+setSel.id="set-size"; setLabel.htmlFor=setSel.id;
 [4,6,8,12].forEach(n=>{ const o=el("option",null,setSel); o.value=n; o.textContent=n+" stills"; });
 setSel.value = P.setsize;
 setSel.addEventListener("change", ()=>{ P.setsize = parseInt(setSel.value,10); });
@@ -366,7 +351,7 @@ const strip  = document.getElementById("peekplates");
 SECTIONS.forEach((sec,i)=>{
   const b = el("button","tab",tabsEl);
   b.type="button";
-  b.setAttribute("role","tab");
+  b.id="category-"+i;
   b.innerHTML = '<span class="tico">'+(ICONS[sec.dataset.sec]||"")+'</span>'
               + '<span class="tlbl">'+sec.dataset.sec+'</span>';
   b.addEventListener("click", ()=> setTab(i));
@@ -383,10 +368,20 @@ function setMin(min){
 function setTab(i){
   setMin(false);              // a tapped category always shows its contents
   SECTIONS.forEach((s,n)=>{ s.classList.toggle("on", n===i); s.scrollTop = 0; });
-  tabsEl.querySelectorAll(".tab").forEach((b,n)=> b.setAttribute("aria-selected", n===i ? "true":"false"));
+  tabsEl.querySelectorAll(".tab").forEach((b,n)=>{
+    b.setAttribute("aria-pressed", n===i ? "true":"false"); b.tabIndex=n===i?0:-1;
+  });
   strip.hidden = SECTIONS[i].dataset.sec !== "Recipes";
-  const active = tabsEl.querySelector('.tab[aria-selected="true"]');
+  const active = tabsEl.querySelector('.tab[aria-pressed="true"]');
   if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"center"});
   rail.scrollTop = 0;
 }
+tabsEl.addEventListener("keydown",event=>{
+  if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+  const all=Array.from(tabsEl.querySelectorAll(".tab"));
+  let i=all.indexOf(document.activeElement);
+  if(event.key==="Home") i=0; else if(event.key==="End") i=all.length-1;
+  else i=(i+(event.key==="ArrowRight"?1:-1)+all.length)%all.length;
+  event.preventDefault(); setTab(i); all[i].focus();
+});
 setTab(0);

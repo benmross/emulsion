@@ -138,6 +138,12 @@ into `dist/index.html`. It needs Node 18+ and has no dependencies:
 node build.mjs
 ```
 
+Run the production-build checks after building:
+
+```sh
+node test.mjs
+```
+
 ```
 src/
 ├── index.html              page shell and markup
