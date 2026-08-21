@@ -76,6 +76,35 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
     schedule();
     if(onAfter) onAfter();
   });
+  /* Some mobile browsers only begin a range interaction when the thumb itself
+     is touched.  Map a touch anywhere on the track to its matching value so
+     users can tap or drag directly to the setting they want. */
+  const setFromTouch = (event)=>{
+    const bounds = inp.getBoundingClientRect();
+    const fraction = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    const raw = min + fraction * (max - min);
+    const stepped = min + Math.round((raw - min) / step) * step;
+    inp.value = Math.max(min, Math.min(max, stepped)).toFixed(8);
+    inp.dispatchEvent(new Event("input", {bubbles:true}));
+  };
+  let touchPointer = null;
+  inp.addEventListener("pointerdown", (event)=>{
+    if(event.pointerType !== "touch") return;
+    touchPointer = event.pointerId;
+    inp.setPointerCapture(touchPointer);
+    setFromTouch(event);
+    event.preventDefault();
+  });
+  inp.addEventListener("pointermove", (event)=>{
+    if(event.pointerId !== touchPointer) return;
+    setFromTouch(event);
+    event.preventDefault();
+  });
+  const endTouch = (event)=>{
+    if(event.pointerId === touchPointer) touchPointer = null;
+  };
+  inp.addEventListener("pointerup", endTouch);
+  inp.addEventListener("pointercancel", endTouch);
   binders.push(sync); sync();
   return row;
 }
