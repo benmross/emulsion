@@ -1299,32 +1299,37 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
   /* Some mobile browsers only begin a range interaction when the thumb itself
      is touched.  Map a touch anywhere on the track to its matching value so
      users can tap or drag directly to the setting they want. */
-  const setFromTouch = (event)=>{
+  const setFromTouch = (clientX)=>{
     const bounds = inp.getBoundingClientRect();
-    const fraction = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    const fraction = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
     const raw = min + fraction * (max - min);
     const stepped = min + Math.round((raw - min) / step) * step;
     inp.value = Math.max(min, Math.min(max, stepped)).toFixed(8);
     inp.dispatchEvent(new Event("input", {bubbles:true}));
   };
-  let touchPointer = null;
-  inp.addEventListener("pointerdown", (event)=>{
-    if(event.pointerType !== "touch") return;
-    touchPointer = event.pointerId;
-    inp.setPointerCapture(touchPointer);
-    setFromTouch(event);
+  let touchId = null;
+  const activeTouch = (event)=>Array.from(event.changedTouches).find((touch)=>touch.identifier === touchId);
+  const moveTouch = (event)=>{
+    const touch = activeTouch(event);
+    if(!touch) return;
+    setFromTouch(touch.clientX);
     event.preventDefault();
-  });
-  inp.addEventListener("pointermove", (event)=>{
-    if(event.pointerId !== touchPointer) return;
-    setFromTouch(event);
-    event.preventDefault();
-  });
-  const endTouch = (event)=>{
-    if(event.pointerId === touchPointer) touchPointer = null;
   };
-  inp.addEventListener("pointerup", endTouch);
-  inp.addEventListener("pointercancel", endTouch);
+  const endTouch = (event)=>{
+    if(activeTouch(event)) touchId = null;
+  };
+  inp.addEventListener("touchstart", (event)=>{
+    const touch = event.changedTouches[0];
+    if(!touch) return;
+    touchId = touch.identifier;
+    setFromTouch(touch.clientX);
+    event.preventDefault();
+  }, {passive:false});
+  /* Listen on window so a drag keeps working after it leaves the input's
+     original hit area, which is common on narrow mobile tracks. */
+  window.addEventListener("touchmove", moveTouch, {passive:false});
+  window.addEventListener("touchend", endTouch);
+  window.addEventListener("touchcancel", endTouch);
   binders.push(sync); sync();
   return row;
 }
