@@ -98,7 +98,10 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
   const defaultTick = el("span","range-default",track);
   const id = "c_"+key;
   inp.type="range"; inp.min=min; inp.max=max; inp.step=step; inp.id=id;
-  defaultTick.style.left = ((DEFAULTS[key]-min)/(max-min)*100)+"%";
+  const defaultPct = (DEFAULTS[key]-min)/(max-min)*100;
+  /* Range thumbs travel between inset center points, not the input's edges. */
+  defaultTick.style.setProperty("--default-left", `calc(${defaultPct}% + ${6.5-defaultPct*.13}px)`);
+  defaultTick.style.setProperty("--default-left-touch", `calc(${defaultPct}% + ${12-defaultPct*.24}px)`);
   defaultTick.setAttribute("aria-hidden","true");
   lab.textContent = label; lab.setAttribute("for", id);
   const sync = ()=>{ inp.value = P[key]; val.textContent = fmt(P[key]); };

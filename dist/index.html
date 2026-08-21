@@ -273,7 +273,7 @@ input[type=range]{
 .range-wrap{position:relative;height:16px}
 .range-wrap input[type=range]{position:relative;z-index:1;display:block}
 .range-default{
-  position:absolute;z-index:0;top:calc(50% + 3px);width:1px;height:4px;
+  position:absolute;z-index:0;left:var(--default-left);top:calc(50% + 3px);width:1px;height:4px;
   background:var(--dim);transform:translateX(-.5px);pointer-events:none;
 }
 input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:#2A2D32}
@@ -571,7 +571,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   .row label{font-size:14px}
   .row .val{font-size:12.5px}
   .range-wrap{height:40px}
-  .range-default{top:calc(50% + 5px);width:2px;height:6px;transform:translateX(-1px)}
+  .range-default{left:var(--default-left-touch);top:calc(50% + 5px);width:2px;height:6px;transform:translateX(-1px)}
   input[type=range]{height:40px;touch-action:pan-y}
   input[type=range]::-webkit-slider-runnable-track{height:5px}
   input[type=range]::-moz-range-track{height:5px}
@@ -1384,7 +1384,10 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
   const defaultTick = el("span","range-default",track);
   const id = "c_"+key;
   inp.type="range"; inp.min=min; inp.max=max; inp.step=step; inp.id=id;
-  defaultTick.style.left = ((DEFAULTS[key]-min)/(max-min)*100)+"%";
+  const defaultPct = (DEFAULTS[key]-min)/(max-min)*100;
+  /* Range thumbs travel between inset center points, not the input's edges. */
+  defaultTick.style.setProperty("--default-left", `calc(${defaultPct}% + ${6.5-defaultPct*.13}px)`);
+  defaultTick.style.setProperty("--default-left-touch", `calc(${defaultPct}% + ${12-defaultPct*.24}px)`);
   defaultTick.setAttribute("aria-hidden","true");
   lab.textContent = label; lab.setAttribute("for", id);
   const sync = ()=>{ inp.value = P[key]; val.textContent = fmt(P[key]); };
