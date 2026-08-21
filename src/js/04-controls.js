@@ -93,9 +93,13 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
   const top = el("div","top",row);
   const lab = el("label",null,top);
   const val = el("span","val",top);
-  const inp = el("input",null,row);
+  const track = el("div","range-wrap",row);
+  const inp = el("input",null,track);
+  const defaultTick = el("span","range-default",track);
   const id = "c_"+key;
   inp.type="range"; inp.min=min; inp.max=max; inp.step=step; inp.id=id;
+  defaultTick.style.left = ((DEFAULTS[key]-min)/(max-min)*100)+"%";
+  defaultTick.setAttribute("aria-hidden","true");
   lab.textContent = label; lab.setAttribute("for", id);
   const sync = ()=>{ inp.value = P[key]; val.textContent = fmt(P[key]); };
   inp.addEventListener("input", ()=>{
