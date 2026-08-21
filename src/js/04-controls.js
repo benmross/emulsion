@@ -87,29 +87,52 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
     inp.value = Math.max(min, Math.min(max, stepped)).toFixed(8);
     inp.dispatchEvent(new Event("input", {bubbles:true}));
   };
-  let touchId = null;
+  let touchId = null, touchStart = null, touchIsDrag = null;
   const activeTouch = (event)=>Array.from(event.changedTouches).find((touch)=>touch.identifier === touchId);
   const moveTouch = (event)=>{
     const touch = activeTouch(event);
     if(!touch) return;
+    if(touchIsDrag === null){
+      const dx = touch.clientX - touchStart.x;
+      const dy = touch.clientY - touchStart.y;
+      if(Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
+      if(Math.abs(dy) > Math.abs(dx)){
+        touchId = null;
+        touchStart = null;
+        return;
+      }
+      touchIsDrag = true;
+    }
     setFromTouch(touch.clientX);
     event.preventDefault();
   };
   const endTouch = (event)=>{
-    if(activeTouch(event)) touchId = null;
+    const touch = activeTouch(event);
+    if(!touch) return;
+    if(!touchIsDrag) setFromTouch(touch.clientX);
+    touchId = null;
+    touchStart = null;
+    touchIsDrag = null;
+  };
+  const cancelTouch = (event)=>{
+    if(activeTouch(event)){
+      touchId = null;
+      touchStart = null;
+      touchIsDrag = null;
+    }
   };
   inp.addEventListener("touchstart", (event)=>{
     const touch = event.changedTouches[0];
     if(!touch) return;
     touchId = touch.identifier;
-    setFromTouch(touch.clientX);
-    event.preventDefault();
-  }, {passive:false});
+    touchStart = {x:touch.clientX, y:touch.clientY};
+    touchIsDrag = null;
+  });
   /* Listen on window so a drag keeps working after it leaves the input's
      original hit area, which is common on narrow mobile tracks. */
   window.addEventListener("touchmove", moveTouch, {passive:false});
   window.addEventListener("touchend", endTouch);
-  window.addEventListener("touchcancel", endTouch);
+  window.addEventListener("touchcancel", cancelTouch);
   binders.push(sync); sync();
   return row;
 }
