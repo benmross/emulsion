@@ -54,7 +54,7 @@ const page = template
 await mkdir(join(root, "dist"), { recursive: true });
 await writeFile(join(root, "dist", "index.html"), page);
 await Promise.all([
-  "icon.svg","icon-192.png","icon-512.png","apple-touch-icon.png","manifest.webmanifest","robots.txt","sitemap.xml","_headers","404.html"
+  "icon.svg","icon-192.png","icon-512.png","apple-touch-icon.png","manifest.webmanifest","robots.txt","sitemap.xml","_headers","404.html","privacy.html"
 ].map(f=>copyFile(join(root,"public",f),join(root,"dist",f))));
 await copyFile(join(root,"docs","app.png"),join(root,"dist","app.png"));
 
