@@ -2,3 +2,12 @@ node_modules/
 .wrangler/
 *.log
 .DS_Store
+
+# Native build products and local Xcode state
+build/
+DerivedData/
+xcuserdata/
+*.xcuserdatad
+*.ipa
+*.dSYM.zip
+__pycache__/

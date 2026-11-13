@@ -24,13 +24,13 @@ const MODULES = [
 ];
 
 const [template, styles, vert, frag] = await Promise.all([
-  read("src", "index.html"),
-  read("src", "styles.css"),
-  read("src", "shaders", "plate.vert.glsl"),
-  read("src", "shaders", "plate.frag.glsl"),
+  read("apps", "web", "src", "index.html"),
+  read("apps", "web", "src", "styles.css"),
+  read("apps", "web", "src", "shaders", "plate.vert.glsl"),
+  read("apps", "web", "src", "shaders", "plate.frag.glsl"),
 ]);
 
-const modules = await Promise.all(MODULES.map((f) => read("src", "js", f)));
+const modules = await Promise.all(MODULES.map((f) => read("apps", "web", "src", "js", f)));
 
 /** GLSL travels as a template literal; guard the two characters that would break it. */
 const glsl = (name, source) => {
@@ -55,7 +55,7 @@ await mkdir(join(root, "dist"), { recursive: true });
 await writeFile(join(root, "dist", "index.html"), page);
 await Promise.all([
   "icon.svg","icon-192.png","icon-512.png","apple-touch-icon.png","manifest.webmanifest","robots.txt","sitemap.xml","_headers","404.html","privacy.html"
-].map(f=>copyFile(join(root,"public",f),join(root,"dist",f))));
+].map(f=>copyFile(join(root,"apps","web","public",f),join(root,"dist",f))));
 await copyFile(join(root,"docs","app.png"),join(root,"dist","app.png"));
 
 const kb = (Buffer.byteLength(page) / 1024).toFixed(1);
