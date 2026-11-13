@@ -26,6 +26,15 @@ The 32 native app source, project and resource files match the original iOS
 1.1 build 17 checkout byte for byte. The iOS README changes only its web link.
 No new native binary was built for this website and repository update.
 
+A follow-up reproduces Cloudflare’s `/app/index.html` redirect locally. The
+previous worker cached that redirected response, which Chrome rejects for an
+offline navigation. The fallback now uses the clean `/app/` response directly;
+offline reload and editing pass with clean-URL redirects and the production CSP.
+
+The landing preview now derives its height from the screenshot itself, keeping
+the device border outside the image ratio. Plates, Color and Grain are checked
+at 320, 412 and 1440 pixels wide for exact ratio and no letterboxing.
+
 Hosting verification is separate: production uses the existing Cloudflare Pages
 Git integration, root build command `node build.mjs`, and `dist` output. Live
 routes, response headers, analytics removal and GitHub CI must be checked after

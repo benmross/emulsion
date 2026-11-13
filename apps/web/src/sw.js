@@ -1,5 +1,5 @@
 const CACHE="emulsion-app-__CACHE_VERSION__";
-const SHELL=["/app/","/app/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png","/apple-touch-icon.png","/fonts/archivo.woff2"];
+const SHELL=["/app/","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png","/apple-touch-icon.png","/fonts/archivo.woff2"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));
 });
@@ -18,7 +18,7 @@ self.addEventListener("fetch",event=>{
   if(event.request.mode==="navigate" && appDocument){
     event.respondWith((async()=>{
       try { return await fetch(event.request); }
-      catch(e){ return (await caches.open(CACHE)).match("/app/index.html"); }
+      catch(e){ return (await caches.open(CACHE)).match("/app/"); }
     })());
   } else if(SHELL.includes(url.pathname)){
     event.respondWith(caches.open(CACHE).then(async cache=>(await cache.match(url.pathname))||fetch(event.request)));
