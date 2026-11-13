@@ -1,4 +1,4 @@
-const CACHE="emulsion-app-fee165a245db2734";
+const CACHE="emulsion-app-1234918010e45b60";
 const SHELL=["/app/","/app/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png","/apple-touch-icon.png","/fonts/archivo.woff2"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));
