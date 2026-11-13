@@ -24,12 +24,15 @@ jobs:
       - name: Build
         run: node build.mjs
 
-      # dist/index.html is committed so the repo can be opened without a build.
+      - name: Check production behavior
+        run: node test.mjs
+
+      # Committed output must match the complete site, including the PWA shell.
       # If it no longer matches src/, the commit forgot to rebuild.
       - name: Check dist is current
         run: |
-          if ! git diff --quiet -- dist/index.html; then
-            echo "::error::dist/index.html is stale — run 'node build.mjs' and commit the result"
-            git diff --stat -- dist/index.html
+          if [ -n "$(git status --porcelain --untracked-files=all -- dist/)" ]; then
+            echo "::error::dist/ is stale — run 'node build.mjs' and commit the result"
+            git diff --stat -- dist/
             exit 1
           fi

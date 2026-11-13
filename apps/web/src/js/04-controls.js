@@ -8,10 +8,9 @@ function el(tag, cls, parent){
 const SVG = d => '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" '
   + 'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
 const ICONS = {
-  Recipes: SVG('<path d="M8 1.6 1.8 4.7 8 7.8l6.2-3.1L8 1.6Z"/><path d="M1.8 8 8 11.1 14.2 8"/><path d="M1.8 11.3 8 14.4l6.2-3.1"/>'),
+  Plates: SVG('<path d="M8 1.6 1.8 4.7 8 7.8l6.2-3.1L8 1.6Z"/><path d="M1.8 8 8 11.1 14.2 8"/><path d="M1.8 11.3 8 14.4l6.2-3.1"/>'),
   Form:    SVG('<path d="M9.6 1.9c2.6.7 4.2 3.2 3.9 6-.3 3.1-2.6 6.2-5.2 6.2-2.4 0-4.2-2.4-4.2-5.3 0-3.6 2.4-7.7 5.5-6.9Z"/>'),
   Optics:  SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8 11.6 8M8 14.2 4.4 8M13.4 5.5 6.2 6.4M2.6 10.5l7.2-.9M13 11.2 9.4 5M3 4.8l3.6 6.2"/>'),
-  Motion:  SVG('<path d="M1.8 5.4c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/><path d="M1.8 10.6c1.6-2.4 3.1-2.4 4.7 0s3.1 2.4 4.7 0 3.1-2.4 3-.6"/>'),
   Tone:    SVG('<circle cx="8" cy="8" r="6.2"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4Z" fill="currentColor" stroke="none"/>'),
   Color:   SVG('<path d="M8 1.8s4.3 4.9 4.3 7.6A4.3 4.3 0 0 1 8 13.9a4.3 4.3 0 0 1-4.3-4.5C3.7 6.7 8 1.8 8 1.8Z"/>'),
   Grain:   SVG('<circle cx="4" cy="4.2" r=".9"/><circle cx="11.4" cy="3.6" r=".9"/><circle cx="7.6" cy="7.4" r=".9"/><circle cx="3.4" cy="11" r=".9"/><circle cx="12" cy="10.6" r=".9"/><circle cx="8.2" cy="13" r=".9"/>'),
@@ -108,6 +107,7 @@ function slider(host, key, label, min, max, step, fmt, onAfter){
   const sync = ()=>{ inp.value = P[key]; val.textContent = fmt(P[key]); };
   inp.addEventListener("input", ()=>{
     P[key] = parseFloat(inp.value);
+    touchedLook(key);
     val.textContent = fmt(P[key]);
     schedule();
     if(onAfter) onAfter();
@@ -129,7 +129,7 @@ function toggle(host, key, label, onAfter){
   const b = el("button","switch",row);
   b.type="button"; b.setAttribute("aria-label",label);
   const sync = ()=> b.setAttribute("aria-pressed", P[key] ? "true":"false");
-  b.addEventListener("click", ()=>{ P[key] = !P[key]; sync(); schedule(); if(onAfter) onAfter(); });
+  b.addEventListener("click", ()=>{ P[key] = !P[key]; touchedLook(key); sync(); schedule(); if(onAfter) onAfter(); });
   binders.push(sync); sync();
 }
 function segmented(host, key, label, options, onAfter){
@@ -138,7 +138,7 @@ function segmented(host, key, label, options, onAfter){
   const btns = options.map((o,i)=>{
     const b = el("button",null,seg);
     b.type="button"; b.textContent=o;
-    b.addEventListener("click", ()=>{ P[key]=i; sync(); schedule(); if(onAfter) onAfter(); });
+    b.addEventListener("click", ()=>{ P[key]=i; touchedLook(key); sync(); schedule(); if(onAfter) onAfter(); });
     return b;
   });
   const sync = ()=> btns.forEach((b,i)=> b.setAttribute("aria-pressed", P[key]===i ? "true":"false"));
@@ -147,12 +147,16 @@ function segmented(host, key, label, options, onAfter){
 }
 
 /* ============================== rail ============================== */
-const gRecipes = section("Recipes");
-const platesEl = el("div","plates",gRecipes);
+const gPlates = section("Plates");
+const platesEl = el("div","plates",gPlates);
 platesEl.setAttribute("role","group");
 platesEl.setAttribute("aria-label","Plates");
 
 const gForm = section("Form");
+
+const plateTools=el("div","plate-tools",gPlates);
+const plateShuffle=el("button","btn",plateTools); plateShuffle.type="button"; plateShuffle.textContent="Shuffle"; plateShuffle.addEventListener("click",()=>shuffle());
+const plateSeed=el("button","btn",plateTools); plateSeed.type="button"; plateSeed.textContent="New seed"; plateSeed.addEventListener("click",()=>{P.seed=Math.round(Math.random()*9999)/10000;syncAll();schedule();refreshThumbs();});
 
 const shapes = el("div","shapes",gForm);
 SHAPES.forEach((s,i)=>{
@@ -160,7 +164,7 @@ SHAPES.forEach((s,i)=>{
   b.type="button"; b.title = s.hint;
   const img = el("img",null,b); img.alt = s.name;
   el("span",null,b).textContent = s.name;
-  b.addEventListener("click", ()=>{ P.shape=i; activeRecipe=-1; syncShapes(); syncRecipes(); schedule(); });
+  b.addEventListener("click", ()=>{ P.shape=i; activeRecipe=-1; syncShapes(); syncPlates(); schedule(); });
 });
 function syncShapes(){
   shapes.querySelectorAll("button").forEach((b,i)=> b.setAttribute("aria-pressed", P.shape===i?"true":"false"));
@@ -185,24 +189,6 @@ slider(gOptics,"blur","Blur",0,1,0.005, pct, refreshThumbs);
 slider(gOptics,"streak","Streak",0,1,0.01, pct, refreshThumbs);
 slider(gOptics,"streakang","Streak angle",-180,180,1, v=>v.toFixed(0)+"°", refreshThumbs);
 
-const gMotion = section("Motion");
-toggle(gMotion,"animate","Animate", ()=> setAnimating(P.animate));
-slider(gMotion,"flow","Flow",0,1,0.01, pct, refreshThumbs);
-slider(gMotion,"looplen","Loop length",1,12,0.5, v=>v.toFixed(1)+" s");
-const fpsField = el("div","field",gMotion);
-el("span",null,fpsField).textContent = "Frame rate";
-const fpsSel = el("select","sel",fpsField);
-fpsSel.id="fps"; fpsSel.setAttribute("aria-label","Frame rate");
-[24,30,60].forEach(v=>{ const o=el("option",null,fpsSel); o.value=v; o.textContent=v+" fps"; });
-fpsSel.addEventListener("change", ()=>{ P.fps = parseInt(fpsSel.value,10); });
-binders.push(()=>{ fpsSel.value = P.fps; });
-
-const recBtn = el("button","btn wide",gMotion);
-recBtn.type="button"; recBtn.textContent="Record loop";
-/* only ever carries the "this browser can't encode video" line */
-const recNote = el("p","hint",gMotion);
-recNote.hidden = true;
-
 const gTone = section("Tone");
 slider(gTone,"exposure","Exposure",-2,2,0.01, v=>(v>0?"+":"")+v.toFixed(2)+" EV", refreshThumbs);
 slider(gTone,"contrast","Contrast",0.3,3,0.01, v=>v.toFixed(2), refreshThumbs);
@@ -219,7 +205,7 @@ PALETTES.forEach(p=>{
   const i = el("i",null,b);
   i.style.background = "linear-gradient(90deg,"+p.c[0]+","+p.c[1]+","+p.c[2]+")";
   el("span",null,b).textContent = p.name;
-  b.addEventListener("click", ()=>{ P.c0=p.c[0]; P.c1=p.c[1]; P.c2=p.c[2]; syncPals(); schedule(); refreshThumbs(); });
+  b.addEventListener("click", ()=>{ P.c0=p.c[0]; P.c1=p.c[1]; P.c2=p.c[2]; touchedLook("c0"); syncPals(); schedule(); refreshThumbs(); });
 });
 function syncPals(){
   pals.querySelectorAll(".pal").forEach((b,i)=>{
@@ -235,10 +221,10 @@ named("Palette", pals);
 const ramp = el("div","ramp",gColor);
 [["c0","Shadow"],["c1","Mid"],["c2","Light"]].forEach(([key,tag])=>{
   const w = el("label","sw",ramp);
-  const inp = el("input",null,w); inp.type="color";
+  const inp = el("input",null,w); inp.type="color"; inp.setAttribute("aria-label",tag+" color");
   el("span","tag",w).textContent = tag;
   const sync = ()=>{ inp.value = P[key]; w.style.background = P[key]; };
-  inp.addEventListener("input", ()=>{ P[key]=inp.value; w.style.background=inp.value; syncPals(); schedule(); refreshThumbs(); });
+  inp.addEventListener("input", ()=>{ P[key]=inp.value; touchedLook(key); w.style.background=inp.value; syncPals(); schedule(); refreshThumbs(); });
   binders.push(sync); sync();
 });
 binders.push(syncPals); syncPals();
@@ -259,6 +245,8 @@ slider(gTex,"texamt","Depth",0,1,0.01, pct, refreshThumbs);
 slider(gTex,"texscale","Texture scale",0.2,3,0.01, v=>v.toFixed(2)+"×", refreshThumbs);
 
 const gOut = section("Output");
+const outputSave=el("button","btn primary wide",gOut); outputSave.type="button"; outputSave.textContent="Save image"; outputSave.addEventListener("click",()=>exportStill());
+const outputShare=el("button","btn wide",gOut); outputShare.type="button"; outputShare.textContent="Share image"; outputShare.addEventListener("click",()=>sharePlate());
 const sizeBox = el("div","group",gOut);
 const sel = el("select","sel",sizeBox);
 sel.id="output-size"; sel.setAttribute("aria-label","Output size preset");
@@ -346,12 +334,19 @@ binders.push(()=>{ setSel.value = P.setsize; });
 const setBtn = el("button","btn",setRow);
 setBtn.type="button"; setBtn.textContent="Export set";
 
+const installBtn = el("button","btn wide",gOut);
+installBtn.type="button"; installBtn.textContent="Install Emulsion"; installBtn.hidden=true;
+const installHint = el("p","hint",gOut);
+installHint.textContent="On Android, use your browser menu to install Emulsion or add it to your home screen. After the first visit, you can use it offline.";
+const appLinks = el("p","hint app-links",gOut);
+appLinks.innerHTML='<a href="/">About Emulsion</a> · <a href="/privacy">Privacy</a> · <a href="https://benmross.com">Ben Ross</a>';
+
 const linkBtn = el("button","btn wide",gOut);
 linkBtn.type="button"; linkBtn.textContent="Copy link to this look";
 
 /* ---------- one group at a time on small screens ----------
    The tab bar is permanent and the group's own controls sit right above it:
-   label on the left, the slider, switch or picker on the right. Recipes is the
+   label on the left, the slider, switch or picker on the right. Plates is the
    one group that shows something else — the plate strip, scrolling sideways. */
 const tabsEl = document.getElementById("tabs");
 const strip  = document.getElementById("peekplates");
@@ -379,10 +374,12 @@ function setTab(i){
   tabsEl.querySelectorAll(".tab").forEach((b,n)=>{
     b.setAttribute("aria-pressed", n===i ? "true":"false"); b.tabIndex=n===i?0:-1;
   });
-  strip.hidden = SECTIONS[i].dataset.sec !== "Recipes";
+  strip.hidden = SECTIONS[i].dataset.sec !== "Plates";
+  document.getElementById("platePicker").hidden=strip.hidden;
   const active = tabsEl.querySelector('.tab[aria-pressed="true"]');
   if(active && active.scrollIntoView) active.scrollIntoView({block:"nearest", inline:"center"});
   rail.scrollTop = 0;
+  if(sessionReady){ currentCategory = i; persistSession(); }
 }
 tabsEl.addEventListener("keydown",event=>{
   if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;

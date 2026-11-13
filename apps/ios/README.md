@@ -1,6 +1,6 @@
 # Emulsion for iOS
 
-A native SwiftUI + Metal rewrite of [emulsion.benmross.com](https://emulsion.benmross.com):
+A native SwiftUI + Metal rewrite of [the Emulsion web app](https://emulsion.benmross.com/app/):
 generative grain plates for still wallpapers.
 
 The web app renders its whole image from one WebGL2 fragment shader. This app

@@ -26,7 +26,7 @@ function makeRenderer(canvas){
   const warned = {};
   const loc = {}, U = n => (loc[n] !== undefined ? loc[n] : (loc[n]=gl.getUniformLocation(prog,n)));
 
-  const draw = function(p, w, h, ps, phase){
+  const draw = function(p, w, h, ps){
     if(gl.isContextLost()) throw new Error("WebGL context was lost");
     if(canvas.width!==w || canvas.height!==h){ canvas.width=w; canvas.height=h; }
     gl.viewport(0,0,w,h);
@@ -52,7 +52,6 @@ function makeRenderer(canvas){
     f("uGrain",p.grain); f("uGSize",p.gsize); f("uGDens",p.gdens); f("uGResp",p.gresp);
     f("uBands",p.bands); f("uBlur",p.blur); f("uStreak",p.streak); f("uStreakAng",p.streakang);
     f("uGloss",p.gloss);
-    f("uPhase", phase||0); f("uMotion", p.flow);
     f("uMid",p.mid);
     gl.uniform3fv(U("uC0"), hex2rgb(p.c0));
     gl.uniform3fv(U("uC1"), hex2rgb(p.c1));

@@ -36,19 +36,19 @@ const binders = [];
 const syncAll = () => binders.forEach(fn => fn());
 
 let previewScale = 1, rafId = 0, rw = 2, rh = 2;
-let phase = 0, animRAF = 0, animT0 = 0, recording = false, fpsEma = 0, lastFrame = 0;
+let recording = false;
 function schedule(){
   if(!draw || rafId) return;
   if(typeof invalidatePreparedShare === "function") invalidatePreparedShare();
   rafId = requestAnimationFrame(()=>{ rafId = 0; render(); });
 }
-function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale, phase); }
+function paint(){ if(draw && !recording) draw(P, rw, rh, previewScale); }
 const COARSE = !!(window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
 const MOBILE = window.matchMedia("(max-width:980px)");
 function render(){
   if(!draw || recording) return;
   const asp = P.W / P.H;
-  let dispW, dispH;
+  let dispW, dispH, topInset=0;
   if(document.body.classList.contains("immersive")){
     // fill crops to the screen (how a wallpaper actually sits); fit shows the whole plate
     const vw = window.innerWidth, vh = window.innerHeight;
@@ -59,7 +59,8 @@ function render(){
     const box = plate.getBoundingClientRect();
     const pad = MOBILE.matches ? 8 : (COARSE ? 22 : 52);
     const availW = Math.max(120, box.width  - pad);
-    const availH = Math.max(120, box.height - pad);
+    if(MOBILE.matches && !document.body.classList.contains("ui-off")) topInset=document.querySelector(".topbar").getBoundingClientRect().bottom+8;
+    const availH = Math.max(64, box.height - pad - topInset);
     dispW = Math.min(availW, availH*asp);
     dispH = dispW / asp;
   }
@@ -72,7 +73,9 @@ function render(){
   previewScale = rw / P.W;
   canvas.style.width  = Math.round(dispW)+"px";
   canvas.style.height = Math.round(dispH)+"px";
+  canvas.style.marginTop=topInset+"px";
   if(guides){                        // the guides ride the picture, not the frame
+    guides.style.marginTop=(topInset/2)+"px";
     guides.style.width  = Math.round(dispW)+"px";
     guides.style.height = Math.round(dispH)+"px";
   }
@@ -87,35 +90,6 @@ function updateStatus(){
   document.getElementById("stPrev").textContent = Math.round(previewScale*100)+"%";
   document.getElementById("stSeed").textContent = P.seed.toFixed(4);
 }
-function setAnimating(on){
-  P.animate = on;
-  if(on){
-    animT0 = performance.now(); lastFrame = animT0; fpsEma = 0;
-    if(!animRAF) animRAF = requestAnimationFrame(tick);
-  } else {
-    if(animRAF) cancelAnimationFrame(animRAF);
-    animRAF = 0; phase = 0;
-    document.getElementById("stFps").textContent = "still";
-    schedule();
-  }
-}
-function tick(now){
-  if(!P.animate){
-    animRAF = 0; phase = 0;
-    document.getElementById("stFps").textContent = "still";
-    schedule();
-    return;
-  }
-  animRAF = requestAnimationFrame(tick);
-  if(recording) return;
-  const loopMs = Math.max(P.looplen,0.5)*1000;
-  phase = (((now - animT0) % loopMs)/loopMs)*Math.PI*2;
-  paint();
-  const dt = now - lastFrame; lastFrame = now;
-  if(dt > 0) fpsEma = fpsEma ? fpsEma*0.9 + (1000/dt)*0.1 : 1000/dt;
-  document.getElementById("stFps").textContent = Math.round(fpsEma)+" fps";
-}
-
 let msgTimer = 0;
 function msg(text){
   stMsg.textContent = text;
@@ -139,7 +113,7 @@ function refreshThumbs(){
       img.src = thumbCanvas.toDataURL("image/png");
     });
     // plate tiles only depend on colour and grain, so skip the work when neither moved
-    const sig = [P.c0,P.c1,P.c2,P.mid,P.chroma,P.grain,P.gsize,P.gdens,P.gresp,P.W,P.H].join("|");
+    const sig = [P.c0,P.c1,P.c2,P.mid,P.chroma,P.grain,P.gsize,P.gdens,P.gresp,P.seed,P.W,P.H].join("|");
     if(sig === plateSig) return;
     plateSig = sig;
     RECIPES.forEach((r,i)=>{

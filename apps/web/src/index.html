@@ -2,22 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Emulsion — Procedural Wallpaper &amp; Grain Loop Generator</title>
+<title>Emulsion Studio | Grain wallpapers</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Create grainy procedural wallpapers and seamless animated loops in your browser. No uploads, accounts, or generative AI.">
-<link rel="canonical" href="https://emulsion.benmross.com/">
+<meta name="description" content="Make grainy abstract wallpapers on your device. Fourteen plates, eight control panels, full-resolution exports, and offline use.">
+<link rel="canonical" href="https://emulsion.benmross.com/app/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Emulsion">
 <meta property="og:title" content="Emulsion — Procedural Wallpaper Generator">
-<meta property="og:description" content="Shape procedural fields, tone, color, grain, and motion, then export full-resolution stills or seamless loops.">
-<meta property="og:url" content="https://emulsion.benmross.com/">
+<meta property="og:description" content="Adjust form, color, and grain, then save a full-resolution still wallpaper.">
+<meta property="og:url" content="https://emulsion.benmross.com/app/">
 <meta property="og:image" content="https://emulsion.benmross.com/app.png">
-<meta property="og:image:width" content="1500">
-<meta property="og:image:height" content="807">
-<meta property="og:image:alt" content="The Emulsion interface displaying a dark liquid-chrome procedural wallpaper">
+<meta property="og:image:width" content="1440">
+<meta property="og:image:height" content="1000">
+<meta property="og:image:alt" content="The Emulsion studio displaying a grainy Limb wallpaper and its plate controls">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Emulsion — Procedural Wallpaper Generator">
-<meta name="twitter:description" content="Create grainy procedural wallpapers and seamless loops directly in your browser.">
+<meta name="twitter:description" content="Make grainy abstract still wallpapers directly in your browser.">
 <meta name="twitter:image" content="https://emulsion.benmross.com/app.png">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#08090A">
@@ -27,10 +27,6 @@
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Emulsion","url":"https://emulsion.benmross.com/","applicationCategory":"MultimediaApplication","operatingSystem":"Any modern web browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A browser-based procedural wallpaper and seamless grain-loop generator."}</script>
 <!-- @styles -->
 </head>
 
@@ -41,7 +37,7 @@
     <header class="topbar">
       <div class="mark">
         <span class="dot" aria-hidden="true"></span>
-        <h1>Emulsion</h1>
+        <a href="/" class="brand-link" aria-label="About Emulsion">emulsion</a>
       </div>
       <span class="rule" aria-hidden="true"></span>
       <p class="now" id="nowName"><i>plate</i> <b>Limb</b></p>
@@ -66,11 +62,10 @@
           <div class="g controls"><span>controls</span></div>
         </div>
         <div class="busy" id="busy" role="status" aria-live="polite">rendering full size…</div>
-        <p class="caption" id="caption" aria-live="polite"><b>Limb</b><span>14 plates · tap to take over</span></p>
+        <p class="caption" id="caption" aria-live="polite"><b>Limb</b><span></span></p>
         <div class="hud" id="hud" role="toolbar" aria-label="Preview controls">
           <button class="hudbtn close" data-act="close" aria-label="Exit fullscreen">✕</button>
           <button class="hudbtn" data-act="fill">Fit</button>
-          <button class="hudbtn" data-act="animate">Play</button>
           <button class="hudbtn" data-act="shuffle">Shuffle</button>
           <button class="hudbtn" data-act="export">Export</button>
         </div>
@@ -121,16 +116,23 @@
 
     <!-- one fixed-height body, whichever group is showing -->
     <div class="sheetbody" id="sheetbody">
-      <!-- Recipes shows this; every other tab shows its own section -->
-      <div class="peekplates" id="peekplates"></div>
+      <!-- Plates shows this; every other tab shows its own section -->
+      <div class="plate-picker" id="platePicker"><div class="peekplates" id="peekplates"></div><div class="plate-tools"><button type="button" class="btn" id="plateShuffle">Shuffle</button><button type="button" class="btn" id="plateSeed">New seed</button></div></div>
 
       <!-- control sections are appended here -->
     </div>
 
+    <div class="history-controls" aria-label="Edit history">
+      <button type="button" data-history="undo" disabled>↶ Undo</button>
+      <button type="button" data-history="redo" disabled>↷ Redo</button>
+      <span id="sessionStatus" role="status" aria-live="polite">Saved on this device</span>
+    </div>
     <nav class="tabs" id="tabs" aria-label="Control groups"></nav>
   </aside>
 </div>
 
+<noscript><p class="nogl">Emulsion needs JavaScript to render wallpapers. <a href="/">Back to Emulsion</a></p></noscript>
+<dialog id="result" aria-labelledby="resultTitle"><h2 id="resultTitle"></h2><div id="resultGrid"></div><p>Your image is in Downloads. Open it in Photos or Files and choose “Set as wallpaper”. For a set, unzip the download first. Tap a preview to keep editing that variation.</p><button type="button" class="btn primary wide" id="resultDone">Done</button></dialog>
 <!-- @app -->
 </body>
 </html>

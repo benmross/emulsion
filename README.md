@@ -1,175 +1,102 @@
 # Emulsion
 
-**Generative grain plates for still and moving monochrome fields.**
+Make grainy, abstract still wallpapers. Start with one of fourteen plates, adjust
+form, optics, tone, color, grain and surface, and export at your screen’s resolution.
+Every pixel is generated on your device, with no accounts or image uploads.
 
-A single-page WebGL2 tool for making the grainy, near-black gradient images that
-fill phone wallpaper feeds — soft lit forms, folded satin, liquid chrome, light
-shafts — with every part of the look under a slider, exported at any resolution.
+[Download for iPhone](https://apps.apple.com/app/id6809967506) ·
+[Web app for Android and desktop](https://emulsion.benmross.com/app/) ·
+[About Emulsion](https://emulsion.benmross.com/) ·
+[Privacy](https://emulsion.benmross.com/privacy)
 
-🔗 **[emulsion.benmross.com](https://emulsion.benmross.com)**
+## One repository, two apps
 
-![The Emulsion interface on the Chrome plate](docs/app.png)
-
----
-
-## What it is
-
-One fragment shader draws the whole image in a single pass. There is no photo
-input, no library of textures, no upscaling: a scalar field is evaluated per
-pixel, tone-mapped, colored, and grained at the exact output resolution you
-export. A 4K plate is not a stretched preview — it is the same math sampled
-more finely.
-
-The pipeline, in order:
-
-| Stage | What happens |
-| --- | --- |
-| **Field** | One of eight shape functions returns a luminance value for the pixel — a lit column, a beam, folded waves, ridges, smoke, a sphere, warped chrome contours, or merging blobs. Value-noise fBm with adjustable octaves drives the warping. |
-| **Optics** | A 10-tap kernel blurs the field in scene units, stretchable along an axis for directional motion blur. Because it is applied to the field and not to pixels, blur is resolution-independent. |
-| **Motion** | The field walks a closed path in noise space and band phase advances exactly 2π per loop, so an animation returns to frame one exactly — loops are seamless by construction, not by crossfade. |
-| **Tone** | Exposure, black point, gamma, contrast pivot, gloss (a specular contour sharpener), vignette. |
-| **Color** | Luminance maps through a three-stop gradient — shadow, mid, light — with a movable mid stop and an invert. Fifteen presets from Silver and Steel to Cyanotype, Rosé, and Neon, or set the three stops by hand. |
-| **Grain** | Cell noise sized in *output* pixels, with density (what fraction of cells carry a speck) and midtone bias (film weights grain toward mid values; dial it down for grain that reaches into the shadows). Optional chroma grain. |
-| **Surface** | An optional overlay: diagonal dashes, brushed streaks, weave, or a luminance-sized halftone dot screen applied after tone mapping. |
-
-## Plates
-
-Fourteen presets, each setting the full form/optics/tone/colour/grain stack —
-and each carrying its own three-stop ramp, so no two plates land on the same
-colour. A plate is a *look*, not a working setup: picking one moves only the
-keys it owns and resets the ones it does not name, while your mid stop, output
-size, seed, and motion settings stay exactly where you put them. The ramp is
-still yours to change afterwards; the plate only sets where you start.
-
-![Contact sheet of all fourteen plates](docs/recipes.png)
-
-## Exporting
-
-- **Export** — one still as PNG, WebP, or JPEG at the configured resolution
-  (up to 8192 px a side). PNG over 16 MB falls back to WebP automatically.
-- **Export set** — 4–12 seed variations of the current look, back to back.
-- **Record loop** — one full animation cycle as MP4 (H.264). Frames are
-  rendered one at a time, encoded through WebCodecs with exact timestamps, and
-  muxed by `src/js/05-video.js`, so a plate that renders at 14 fps still yields
-  a true 24/30/60 fps video — it just takes longer to write. Browsers without
-  WebCodecs H.264 fall back to real-time `MediaRecorder` capture, which shrinks
-  the frame to whatever size the machine can paint fast enough.
-
-Presets cover iPhone 16 Pro (1206 × 2622) and Pro Max, common phone and desktop
-sizes, and a 4:5 print ratio; any custom size works too.
-
-## On a phone
-
-The plate is the page. It sits whole above a bottom sheet — never cropped, so
-what you see is what lands on the lock screen — and the sheet keeps one height
-whichever control you are in, so the picture never jumps as you move around.
-
-A row of category tiles never leaves the bottom: **Recipes**, Form, Optics,
-Motion, Tone, Color, Grain, Surface, Output. Recipes opens onto a horizontally
-scrolling strip of plate thumbnails, so you are picking from pictures rather
-than from fourteen identical words. Every other tile shows that group's own
-controls right there — label on the left, slider, switch or picker on the
-right — so changing anything is one tap and a drag, with nothing to open and
-nothing to back out of. Pickers that would swallow the panel as a grid, the
-shapes and the palettes, scroll sideways instead and keep the current choice in
-view.
-
-**Shuffle**, **Save**, and **Share** sit as icons in the top right. Share hands
-the rendered PNG to the OS share sheet, which on iOS is the shortest path into
-Photos.
-
-Tapping the wallpaper hides the entire interface for a clean look at it, and
-tapping again brings it back. The sheet handle collapses the panel to just the
-tile row when you want more picture without losing the controls.
-
-On arrival the page walks the plates in order — the same order as the strip,
-so the row reads as a filmstrip — naming each one until you touch it, so the
-range is visible before you know there are any controls.
-
-iOS tints the strip behind the clock with the page's theme colour, so the app
-samples the top of the plate after each change and hands that colour over,
-which stops the band reading as a black bar. **Add to Home Screen** goes
-further: launched from there it runs with a translucent status bar and the
-plate really does reach the top of the screen.
-
-**Copy link to this look** (in Output) encodes the entire plate — form, optics,
-tone, palette, grain, size, seed — into the URL, so a look can be sent to
-someone and opens exactly as you left it.
-
-## Wallpapers on iOS
-
-iOS has no third-party live-wallpaper API — motion is possible only on the Lock
-Screen, and only via a Live Photo. Two routes work:
-
-**Animated Lock Screen.** Set *Loop length* to 3.0 s (Live Photos are ~3 s),
-turn on *Animate*, and **Record loop**. Move the MP4 to the phone, convert it to
-a Live Photo (intoLive or similar), then Settings → Wallpaper → Add New
-Wallpaper → Photos, confirm the motion toggle is on, and Set as Wallpaper Pair.
-The Home Screen still shows a frozen frame — that part is Apple's limit.
-
-**Rotating stills.** **Export set** a batch, drop them into an album, then
-Settings → Wallpaper → Add New Wallpaper → Photo Shuffle → Album, and pick a
-shuffle frequency. For finer control, a Shortcuts *Time of Day* automation with
-the **Set Wallpaper** action can swap plates on a schedule — that action needs a
-plain Photo wallpaper, not a Photo Shuffle one.
-
-The **Lock screen guides** toggle overlays the Dynamic Island, clock, widget
-row, and bottom controls so the bright part of a plate can be placed where the
-clock will not sit on it. Guides are preview-only and never exported.
-
-## Running it
-
-The build output is one self-contained file. Open it directly — no server, no
-install:
-
-```sh
-xdg-open dist/index.html      # or: open dist/index.html
+```
+apps/
+  ios/        SwiftUI + Metal app, iOS 17 and later
+  web/
+    src/      WebGL2 studio, landing page, service worker
+    public/   App icons, self-hosted font, screenshots, preview loop, privacy page
+dist/         Complete static website, committed and deployed to Cloudflare Pages
+docs/         Reference images and development notes
+build.mjs     Dependency-free website build
 ```
 
-Saving from a `file://` copy writes straight to disk with no prompts, which is
-the fastest way to run **Export set**.
+The iOS source matches version 1.1 build 17, including iOS 17 compatibility and
+Liquid Glass on iOS 26. It was brought over from the original iOS checkout at
+commit `8c6e5ca`. The original web history remains in this repository. Signing
+keys, App Store credentials, correspondence and private release records are
+not part of the source distribution.
 
-## Building
+Both apps have eight panels: Plates, Form, Optics, Tone, Color, Grain, Surface,
+and Output. They use the same plate recipes, palettes and still-image shader
+math. The shader exists as GLSL in `apps/web/src/shaders/plate.frag.glsl` and
+Metal in `apps/ios/Emulsion/Render/Plate.metal`; changes to the rendering math
+should be reflected in both. The cached animation on the website is a
+presentation asset. The editor and native app produce still wallpapers.
 
-`build.mjs` inlines the stylesheet, both shaders, and the JavaScript modules
-into `dist/index.html`. It needs Node 18+ and has no dependencies:
+## Web app
+
+Requires a current browser with WebGL2. On Android, open `/app/` in Chrome and
+choose **Install Emulsion** in Output when offered, or **Add to Home screen**
+from the browser menu. It opens as a standalone app. After the first visit,
+the studio and its font are cached for offline use. Installation requires HTTPS
+(or localhost during development).
+
+Your current look, panel and up to 80 undo steps are saved in local storage.
+Undo/redo also supports Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. Storage restrictions or
+clearing site data can remove this history. Plate changes preserve your output
+size, seed and other session settings. Old `/#p=...` look links forward to the
+studio; new shared links use `/app/#p=...`.
+
+Save downloads a PNG, WebP or JPEG. Browsers do not provide native HEIC export,
+so WebP is the web app’s smaller-file option. Share prepares an image, then asks
+for a second tap where the OS share sheet requires a fresh user gesture. Export
+set downloads one ZIP with 4, 6, 8 or 12 seed variations; tap a result preview to
+continue editing that variation. Dimensions can be set up to 8192 pixels per
+side, subject to the browser’s GPU and memory limits. The web app cannot set
+Android’s wallpaper directly: open the downloaded image and set it through the
+system photo or wallpaper app.
+
+The landing page at `/` has real iPhone screenshots, an animated background,
+the App Store link, a smaller Android/web link, and links to the privacy policy,
+source and portfolio. Reduced motion uses the video poster; offscreen and
+hidden-tab playback pauses. All fonts are served locally.
+
+## Build and check
+
+Node 24 is used by CI. No package installation is needed.
 
 ```sh
 node build.mjs
-```
-
-Run the production-build checks after building:
-
-```sh
 node test.mjs
+python3 -m http.server 8080 --directory dist
 ```
 
-```
-src/
-├── index.html              page shell and markup
-├── styles.css              full stylesheet (single dark theme)
-├── shaders/
-│   ├── plate.vert.glsl     3-vertex fullscreen triangle
-│   └── plate.frag.glsl     field, optics, tone, palette, grain, surface
-└── js/
-    ├── 01-data.js          parameters, shapes, palettes, plates, sizes
-    ├── 02-renderer.js      WebGL2 program and uniform upload
-    ├── 03-stage.js         canvas sizing, paint loop, animation clock
-    ├── 04-controls.js      control factory and the rail
-    └── 05-actions.js       plates, shuffle, export, batch, recording
-```
+Open `http://localhost:8080/` for the landing page or `/app/` for the studio.
+`node test.mjs` checks both routes, script syntax, the manifest, offline shell,
+security headers and shared-look round trips. Browser QA should additionally
+cover mobile layout, undo/reload, exports, offline reload and installability.
 
-The JS modules are concatenated in filename order and share one top-level
-scope, so ordering is load-bearing: data, then renderer, then stage, then
-controls, then the actions that wire them together.
+The build keeps the root command and `dist` directory expected by the existing
+Cloudflare Pages Git integration. `dist/` must be committed after rebuilding;
+CI verifies every generated file. The service worker uses a content-derived
+cache version and waits for existing app tabs to close before activating an
+update. The stable manifest ID `/` preserves the identity of earlier installs;
+the launch URL is now `/app/`.
 
-## Browser support
+## iOS app
 
-Needs WebGL2 — current Chrome, Firefox, Safari, and Edge all qualify. Loop
-recording additionally needs `MediaRecorder` with canvas capture; the button
-disables itself and says so where that is missing. Google Fonts is the only
-external request.
+Open `apps/ios/Emulsion.xcodeproj` in release Xcode. Select your own development
+team and bundle identifier for device signing. No project generator is required.
+See [the iOS build notes](apps/ios/README.md) for compatibility and simulator use.
+The project’s relative paths stay inside `apps/ios/` after the monorepo move.
+
+The native app saves to Photos with add-only permission, supports PNG, HEIC and
+JPEG, and uses native sharing. Neither the native app nor the web app includes
+motion or Live Photo export.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE). Archivo is distributed under the
+[SIL Open Font License](apps/web/public/fonts/OFL.txt).

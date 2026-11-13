@@ -486,7 +486,7 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   }
   .sec.on{display:flex}
   .sec > .stack{flex:0 0 auto}
-  .sec[data-sec="Recipes"]{display:none}     /* the strip stands in for it */
+  .sec[data-sec="Plates"]{display:none}     /* the strip stands in for it */
   .sec > h2{display:none}
   .stack{gap:15px}
 
@@ -565,4 +565,35 @@ select.sel{cursor:pointer;font-family:"Instrument Sans",sans-serif;font-size:13p
   .tab{min-width:58px;font-size:10px}
   .peekplates button{width:52px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Shared with the native app: a warm, quiet frame around a still plate. */
+@font-face{font-family:Archivo;src:url('/fonts/archivo.woff2') format('woff2');font-weight:100 900;font-display:swap}
+:root{--ink:#090909;--stage:#090909;--panel:#171615;--raise:#211f1c;--text:#f1ece4;--gold-hi:#e2c496;--gold-lo:#b79971;--gold-txt:#d9be98}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.brand-link{font:800 18px Archivo,system-ui,sans-serif;letter-spacing:-.05em;color:var(--text);text-decoration:none}
+.history-controls{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line-soft)}
+.history-controls button{min-height:40px;background:var(--raise);border:1px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer}
+.history-controls button:disabled{opacity:.35;cursor:default}
+.history-controls span{margin-left:auto;font-size:10px;color:var(--mute);max-width:15ch;text-align:right}
+.app-links a{color:var(--gold-txt)}
+@media(max-width:980px){
+  .rail{left:8px;right:8px;bottom:calc(6px + env(safe-area-inset-bottom));border:1px solid #ffffff19;border-radius:24px;padding-bottom:4px}
+  .history-controls{order:-1;border:0;padding:2px 12px 6px}
+  .grab{order:-2}
+  .vbtn{width:44px;height:44px}
+  .mark .dot{display:none}
+  .topbar{padding-top:calc(18px + env(safe-area-inset-top));padding-bottom:12px;right:auto;background:none}
+  .viewtools{gap:5px}
+  .sheetbody{height:clamp(160px,25dvh,242px)}
+  .tabs{padding:9px 10px 4px}
+  .tab{min-width:60px;border:0;background:transparent;border-radius:16px}
+  body.ui-off .plate{bottom:0}
+  .sec[data-sec="Plates"]{display:none}
+}
+@media(max-height:510px) and (max-width:980px){.sheetbody{height:110px}.history-controls{padding-block:0}.tab{min-height:44px}.grab{height:15px}}
+
+.plate-tools{display:flex;gap:8px;padding:8px 12px}.plate-picker{display:none}
+#result{width:min(420px,calc(100% - 24px));max-height:85dvh;overflow-y:auto;background:var(--panel);color:var(--text);border:1px solid #ffffff26;border-radius:26px;padding:24px;box-shadow:0 24px 80px #0009}
+#result::backdrop{background:#0009;backdrop-filter:blur(8px)}#result h2{font-size:18px;margin:0 0 16px}#result p{color:var(--mute);font-size:13px;line-height:1.6}#resultGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}#resultGrid button{padding:0;border:0;border-radius:10px;overflow:hidden;background:none}#resultGrid img{display:block;width:100%;height:125px;object-fit:cover}
+@media(max-width:980px){.plate-picker{display:flex;flex:1;min-height:0;flex-direction:column}.plate-picker .peekplates{padding-top:6px}.plate-picker .peekplates button{max-height:110px}.plate-tools .btn{min-height:36px;padding:6px 12px;font-size:12px}.sec[data-sec="Plates"]{display:none}}

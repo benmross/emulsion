@@ -8,7 +8,6 @@ uniform float uExp,uCon,uBlack,uGam,uVig;
 uniform float uTexAmt,uTexScale;
 uniform float uGrain,uGSize,uGDens,uGResp;
 uniform float uBands,uBlur,uStreak,uStreakAng,uGloss;
-uniform float uPhase,uMotion;
 uniform vec3 uC0,uC1,uC2; uniform float uMid;
 
 mat2 rot(float a){ float s=sin(a),c=cos(a); return mat2(c,-s,s,c); }
@@ -29,7 +28,6 @@ float fbm(vec2 p){
 }
 float field(vec2 p, vec2 sv){
   float L;
-  float bph = uPhase*step(0.0005,uMotion);
   if(uShape==0){
     float cx = 0.20*sin(p.y*1.7+sv.x) + 0.08*sin(p.y*3.6+sv.y);
     float hw = 0.30 + 0.10*p.y + 0.05*sin(p.y*2.6+sv.x);
@@ -46,7 +44,7 @@ float field(vec2 p, vec2 sv){
     vec2 q=p*3.0+sv;
     float w=fbm(q*0.22);
     q += (uWarp*2.2)*(vec2(w,fbm(q*0.22+7.3))-0.5);
-    L = 0.5+0.5*sin((q.x*1.6+q.y*1.05+w*4.0)*max(uBands*0.5,0.25) + bph);
+    L = 0.5+0.5*sin((q.x*1.6+q.y*1.05+w*4.0)*max(uBands*0.5,0.25));
   } else if(uShape==3){
     vec2 q=p*vec2(1.0,0.40)*2.2+sv;
     q += uWarp*1.4*(vec2(fbm(q*0.35),fbm(q*0.35+3.1))-0.5);
@@ -78,7 +76,7 @@ float field(vec2 p, vec2 sv){
     vec2 w1=vec2(vn(q*0.9), vn(q*0.9+vec2(5.2,1.3)))-0.5;
     vec2 w2=vec2(vn(q*1.9+3.0*w1), vn(q*1.9+3.0*w1+vec2(8.3,2.8)))-0.5;
     float f=fbm(q + uWarp*3.4*w1 + uWarp*1.6*w2);
-    L=0.5+0.5*sin((f*2.0-1.0)*max(uBands,0.4)*3.14159 + bph);
+    L=0.5+0.5*sin((f*2.0-1.0)*max(uBands,0.4)*3.14159);
   } else {
     float acc=0.0;
     vec2 wq=p*1.6+sv;
@@ -119,9 +117,6 @@ void main(){
   p = rot(radians(uAngle))*p;
   p = p/max(uScale,0.05) - vec2(uPosX,uPosY);
   vec2 sv = vec2(uSeed*37.1, uSeed*-21.7);
-  vec2 lp = uMotion*vec2(cos(uPhase)-1.0, sin(uPhase));
-  sv += lp*1.15;
-  p  += lp*0.10;
 
   float L = plate(p, sv);
 
