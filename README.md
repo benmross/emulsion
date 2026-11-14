@@ -100,3 +100,18 @@ motion or Live Photo export.
 
 [MIT](LICENSE). Archivo is distributed under the
 [SIL Open Font License](apps/web/public/fonts/OFL.txt).
+
+## Wallpapers and counted links
+
+`apps/web/wallpapers/wallpapers.json` lists finished looks (recipe, palette and
+seed) with their titles and descriptions. The build turns each one into
+`/w/<slug>/`, a page that renders the full-resolution download on the visitor's
+device from the same recipe, plus the `/wallpapers/` gallery and sitemap entries.
+Preview images live in `apps/web/public/media/w/`.
+
+`functions/go/[[path]].js` is the only server code. `/go/<channel>` sends
+iPhones to the App Store, Android to the web app and everyone else to the
+landing page; `/go/<channel>/<slug>` opens that wallpaper's page. Each request
+adds one to a daily total in the `GO` KV binding, keyed by day, channel, target
+and whether the client looked automated. Nothing about the visitor is stored.
+Totals count requests, not people.

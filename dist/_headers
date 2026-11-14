@@ -22,6 +22,9 @@
 /*.png
   Cache-Control: public, max-age=3600
 
+/media/w/*
+  Cache-Control: public, max-age=86400
+
 /*.svg
   Cache-Control: public, max-age=3600
 

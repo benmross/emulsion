@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>{{title}} | free iPhone wallpaper | emulsion</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="https://emulsion.benmross.com/w/{{slug}}/">
+<meta name="theme-color" content="#0d0c0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="https://emulsion.benmross.com/w/{{slug}}/">
+<meta property="og:image" content="https://emulsion.benmross.com/media/w/{{slug}}.jpg">
+<meta property="og:image:alt" content="{{alt}}">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<!-- @wallstyles -->
+</head>
+<body>
+<header><a class="wordmark" href="/">emulsion</a><a href="/wallpapers/">All wallpapers</a></header>
+<main class="wall">
+  <figure class="phone"><img src="/media/w/{{slug}}.jpg" width="{{pinW}}" height="{{pinH}}" alt="{{alt}}"></figure>
+  <div class="info">
+    <p class="eyebrow">Free wallpaper</p>
+    <h1>{{name}}</h1>
+    <p class="description">{{description}}</p>
+    <div class="actions">
+      <label class="size">Size <select id="size" aria-label="Wallpaper size"></select></label>
+      <button type="button" class="primary" id="download">Download full resolution</button>
+      <button type="button" class="primary" id="save" hidden>Save to Photos</button>
+      <p id="status" role="status" aria-live="polite"></p>
+      <a class="fallback" id="fallback" href="/media/w/{{slug}}.jpg" download="emulsion-{{slug}}.jpg" hidden>Download the preview image instead</a>
+    </div>
+    <div class="more">
+      <a class="pill" href="/app/#p={{state}}">Change the colors in Emulsion</a>
+      <a class="pill" href="/go/store/{{slug}}">Get Emulsion free on iPhone</a>
+    </div>
+    <p class="note">Rendered on your device from the same recipe, at your screen's exact size.</p>
+  </div>
+</main>
+<!-- @related -->
+<footer><span>Made by <a href="https://benmross.com">Ben Ross</a></span><nav aria-label="More about Emulsion"><a href="/privacy">Privacy policy</a><a href="https://github.com/benmross/emulsion">Source ↗</a></nav></footer>
+<script>const WALL={slug:"{{slug}}",state:"{{state}}"};</script>
+<!-- @wallapp -->
+</body>
+</html>
